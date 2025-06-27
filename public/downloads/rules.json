@@ -24,9 +24,9 @@
     }
   ],
   "priorities": {
-    "PriorityLevel": 50,
-    "RequestedTaskFulfillment": 30,
-    "Fairness": 10,
+    "PriorityLevel": 20,
+    "RequestedTaskFulfillment": 40,
+    "Fairness": 25,
     "CostEfficiency": 5,
     "WorkloadBalance": 5
   }

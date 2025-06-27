@@ -84,6 +84,25 @@ export default function Home() {
         setData(originalTasks)
         break
     }
+
+    // Re-run validation on the reset data
+    const dataToValidate = entityType === 'client' ? originalClients :
+      entityType === 'worker' ? originalWorkers : originalTasks
+    const results = runValidations(entityType, dataToValidate)
+    setValidationResults(results)
+
+    // Convert validation results to the format expected by DataTable
+    const errorMap: Record<string, string>[] = []
+    dataToValidate.forEach((_, index) => {
+      const rowErrors: Record<string, string> = {}
+      results
+        .filter(result => result.rowIndex === index)
+        .forEach(result => {
+          rowErrors[result.column] = result.message
+        })
+      errorMap[index] = rowErrors
+    })
+    setErrors(errorMap)
   }
 
   function handleFilteredData(filteredData: any[]) {
@@ -100,6 +119,23 @@ export default function Home() {
         setTasks(filteredData)
         break
     }
+
+    // Re-run validation on the filtered data
+    const results = runValidations(entityType, filteredData)
+    setValidationResults(results)
+
+    // Convert validation results to the format expected by DataTable
+    const errorMap: Record<string, string>[] = []
+    filteredData.forEach((_, index) => {
+      const rowErrors: Record<string, string> = {}
+      results
+        .filter(result => result.rowIndex === index)
+        .forEach(result => {
+          rowErrors[result.column] = result.message
+        })
+      errorMap[index] = rowErrors
+    })
+    setErrors(errorMap)
   }
 
   async function handleExportAllAsZip() {
@@ -177,6 +213,19 @@ export default function Home() {
     // Re-run validation
     const results = runValidations(entityType, updatedData)
     setValidationResults(results)
+
+    // Convert validation results to the format expected by DataTable
+    const errorMap: Record<string, string>[] = []
+    updatedData.forEach((_, index) => {
+      const rowErrors: Record<string, string> = {}
+      results
+        .filter(result => result.rowIndex === index)
+        .forEach(result => {
+          rowErrors[result.column] = result.message
+        })
+      errorMap[index] = rowErrors
+    })
+    setErrors(errorMap)
   }
 
   return (
@@ -187,7 +236,7 @@ export default function Home() {
       <FileUpload onData={handleDataUpload} />
 
       {/* Data Table */}
-      {data.length > 0 && <DataTable data={data} errors={errors} onDataChange={handleDataChange} />}
+      {data.length > 0 && <DataTable data={data} errors={errors} entityType={entityType} onDataChange={handleDataChange} />}
 
       {/* Natural Language Filter */}
       {data.length > 0 && (
@@ -211,9 +260,9 @@ export default function Home() {
           <div className="text-xs text-gray-500">
             <strong>Examples:</strong>
             <ul className="list-disc ml-5 mt-1">
-              <li><em>Tasks:</em> "duration greater than 2" or "category equals development"</li>
-              <li><em>Clients:</em> "priority level is 5" or "client name contains admin"</li>
-              <li><em>Workers:</em> "available slots more than 3" or "skills include javascript"</li>
+              <li><em>Tasks:</em> "duration greater than 1" or "category equals ETL" or "preferred phases include 3"</li>
+              <li><em>Clients:</em> "priority level is 5" or "client name contains Corp" or "group tag equals GroupA"</li>
+              <li><em>Workers:</em> "qualification level greater than 5" or "skills include coding" or "worker group equals GroupB"</li>
             </ul>
           </div>
         </section>
