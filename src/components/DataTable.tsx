@@ -2,14 +2,28 @@
 import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table'
 import React from 'react'
 
-export default function DataTable({ data }: { data: any[] }) {
+export default function DataTable({
+  data,
+  errors = [],
+}: {
+  data: any[]
+  errors?: Record<string, string>[]
+}) {
   const columns: ColumnDef<any>[] = data.length
     ? Object.keys(data[0]).map((key) => ({
       accessorKey: key,
       header: key,
-      cell: ({ getValue }: { getValue: () => any }) => (
-        <input className="p-1 border" defaultValue={getValue() as string} />
-      ),
+      cell: ({ getValue, row, column }: { getValue: () => any; row: any; column: any }) => {
+        const rowIdx = row.index
+        const colId = column.id
+        const error = errors[rowIdx]?.[colId]
+        return (
+          <input
+            className={`p-1 border ${error ? 'border-red-500 bg-red-50' : ''}`}
+            defaultValue={getValue() as string}
+          />
+        )
+      },
     }))
     : []
 

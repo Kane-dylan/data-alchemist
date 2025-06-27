@@ -1,0 +1,6 @@
+ClientID,ClientName,Email,Phone,Age,PriorityLevel,Date
+C001,John Doe,john@example.com,+1234567890,25,3,2025-01-15
+C002,Jane Smith,invalid-email,555-0123,30,2,2025-02-20
+C003,,alice@test.com,+9876543210,150,6,2025-03-10
+C001,Bob Wilson,bob@company.com,invalid-phone,25,1,invalid-date
+C005,Carol Brown,carol@email.com,+1122334455,-5,4,2025-05-01
