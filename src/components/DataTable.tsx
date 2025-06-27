@@ -5,9 +5,11 @@ import React from 'react'
 export default function DataTable({
   data,
   errors = [],
+  onDataChange,
 }: {
   data: any[]
   errors?: Record<string, string>[]
+  onDataChange?: (rowIndex: number, columnId: string, value: string) => void
 }) {
   const columns: ColumnDef<any>[] = data.length
     ? Object.keys(data[0]).map((key) => ({
@@ -21,6 +23,7 @@ export default function DataTable({
           <input
             className={`p-1 border ${error ? 'border-red-500 bg-red-50' : ''}`}
             defaultValue={getValue() as string}
+            onChange={(e) => onDataChange?.(rowIdx, colId, e.target.value)}
           />
         )
       },

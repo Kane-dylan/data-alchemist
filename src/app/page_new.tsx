@@ -3,12 +3,8 @@ import { useState } from 'react'
 import FileUpload from '@/components/FileUpload'
 import DataTable from '@/components/DataTable'
 import RuleManager from '@/components/RuleManager'
-import NaturalLanguageFilter from '@/components/NaturalLanguageFilter'
 import { runValidations, ValidationResult } from '@/utils/validationEngine'
 import { downloadCSV, downloadJSON } from '@/utils/download'
-import JSZip from 'jszip'
-import { saveAs } from 'file-saver'
-import Papa from 'papaparse'
 
 export default function Home() {
   const [data, setData] = useState<any[]>([])
@@ -20,11 +16,6 @@ export default function Home() {
   const [clients, setClients] = useState<any[]>([])
   const [workers, setWorkers] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
-
-  // Original data (for reset functionality)
-  const [originalClients, setOriginalClients] = useState<any[]>([])
-  const [originalWorkers, setOriginalWorkers] = useState<any[]>([])
-  const [originalTasks, setOriginalTasks] = useState<any[]>([])
 
   // Rules and priorities state (lifted from RuleManager)
   const [rules, setRules] = useState<any[]>([])
@@ -38,15 +29,12 @@ export default function Home() {
     switch (uploadEntityType) {
       case 'client':
         setClients(parsed)
-        setOriginalClients(parsed)
         break
       case 'worker':
         setWorkers(parsed)
-        setOriginalWorkers(parsed)
         break
       case 'task':
         setTasks(parsed)
-        setOriginalTasks(parsed)
         break
     }
 
@@ -68,69 +56,6 @@ export default function Home() {
     setErrors(errorMap)
   }
 
-  function resetFilters() {
-    setClients(originalClients)
-    setWorkers(originalWorkers)
-    setTasks(originalTasks)
-    // Reset the displayed data to match current entity type
-    switch (entityType) {
-      case 'client':
-        setData(originalClients)
-        break
-      case 'worker':
-        setData(originalWorkers)
-        break
-      case 'task':
-        setData(originalTasks)
-        break
-    }
-  }
-
-  function handleFilteredData(filteredData: any[]) {
-    setData(filteredData)
-    // Update the appropriate entity-specific state
-    switch (entityType) {
-      case 'client':
-        setClients(filteredData)
-        break
-      case 'worker':
-        setWorkers(filteredData)
-        break
-      case 'task':
-        setTasks(filteredData)
-        break
-    }
-  }
-
-  async function handleExportAllAsZip() {
-    if (clients.length === 0 || workers.length === 0 || tasks.length === 0) {
-      alert('Please upload and fix all data before exporting.')
-      return
-    }
-
-    if (rules.length === 0) {
-      alert('You must add some rules before exporting.')
-      return
-    }
-
-    try {
-      const zip = new JSZip()
-
-      zip.file('rules.json', JSON.stringify({ rules, priorities }, null, 2))
-      zip.file('clients_clean.csv', Papa.unparse(clients))
-      zip.file('workers_clean.csv', Papa.unparse(workers))
-      zip.file('tasks_clean.csv', Papa.unparse(tasks))
-
-      const blob = await zip.generateAsync({ type: 'blob' })
-      saveAs(blob, 'cleaned_dataset_bundle.zip')
-
-      alert('ZIP file has been downloaded successfully!')
-    } catch (error) {
-      console.error('Error creating ZIP:', error)
-      alert('Error creating ZIP file. Please try again.')
-    }
-  }
-
   function handleExportAll() {
     if (clients.length === 0 || workers.length === 0 || tasks.length === 0) {
       alert('Please upload and fix all data before exporting.')
@@ -150,35 +75,6 @@ export default function Home() {
     alert('All files have been downloaded successfully!')
   }
 
-  function handleDataChange(rowIndex: number, columnId: string, value: string) {
-    const updatedData = [...data]
-    updatedData[rowIndex] = { ...updatedData[rowIndex], [columnId]: value }
-    setData(updatedData)
-
-    // Update entity-specific data
-    switch (entityType) {
-      case 'client':
-        const updatedClients = [...clients]
-        updatedClients[rowIndex] = { ...updatedClients[rowIndex], [columnId]: value }
-        setClients(updatedClients)
-        break
-      case 'worker':
-        const updatedWorkers = [...workers]
-        updatedWorkers[rowIndex] = { ...updatedWorkers[rowIndex], [columnId]: value }
-        setWorkers(updatedWorkers)
-        break
-      case 'task':
-        const updatedTasks = [...tasks]
-        updatedTasks[rowIndex] = { ...updatedTasks[rowIndex], [columnId]: value }
-        setTasks(updatedTasks)
-        break
-    }
-
-    // Re-run validation
-    const results = runValidations(entityType, updatedData)
-    setValidationResults(results)
-  }
-
   return (
     <main className="max-w-4xl mx-auto py-10 px-4 space-y-8">
       <h1 className="text-2xl font-bold">AI Data Cleaner</h1>
@@ -187,37 +83,7 @@ export default function Home() {
       <FileUpload onData={handleDataUpload} />
 
       {/* Data Table */}
-      {data.length > 0 && <DataTable data={data} errors={errors} onDataChange={handleDataChange} />}
-
-      {/* Natural Language Filter */}
-      {data.length > 0 && (
-        <section className="space-y-4">
-          <h3 className="text-lg font-semibold">Smart Data Filtering</h3>
-          <div className="flex gap-4 items-start">
-            <div className="flex-1">
-              <NaturalLanguageFilter
-                entityType={entityType}
-                data={data}
-                onFiltered={handleFilteredData}
-              />
-            </div>
-            <button
-              onClick={resetFilters}
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors whitespace-nowrap"
-            >
-              Reset Filters
-            </button>
-          </div>
-          <div className="text-xs text-gray-500">
-            <strong>Examples:</strong>
-            <ul className="list-disc ml-5 mt-1">
-              <li><em>Tasks:</em> "duration greater than 2" or "category equals development"</li>
-              <li><em>Clients:</em> "priority level is 5" or "client name contains admin"</li>
-              <li><em>Workers:</em> "available slots more than 3" or "skills include javascript"</li>
-            </ul>
-          </div>
-        </section>
-      )}
+      {data.length > 0 && <DataTable data={data} errors={errors} />}
 
       {/* Validation Summary */}
       {validationResults.length > 0 && (
@@ -267,25 +133,17 @@ export default function Home() {
             )}
           </div>
 
-          {/* Export All Buttons */}
-          <div className="flex gap-3 mt-4">
-            <button
-              className="bg-black text-white px-6 py-3 rounded hover:bg-gray-800 transition-colors"
-              onClick={handleExportAll}
-            >
-              🚀 Generate & Export All
-            </button>
-            <button
-              className="bg-purple-600 text-white px-6 py-3 rounded hover:bg-purple-700 transition-colors"
-              onClick={handleExportAllAsZip}
-            >
-              📦 Export All as ZIP
-            </button>
-          </div>
+          {/* Export All Button */}
+          <button
+            className="bg-black text-white px-6 py-3 rounded mt-4 hover:bg-gray-800 transition-colors"
+            onClick={handleExportAll}
+          >
+            🚀 Generate & Export All
+          </button>
 
           <p className="text-sm text-gray-600">
             Export your cleaned, header-mapped data as CSV files for use in other applications.
-            Use "Generate & Export All" to download files separately or "Export All as ZIP" for a bundled download.
+            Use "Generate & Export All" to download everything at once.
           </p>
         </section>
       )}

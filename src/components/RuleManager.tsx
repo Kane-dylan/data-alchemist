@@ -2,15 +2,21 @@
 import React, { useState } from 'react'
 import { downloadJSON } from '@/utils/download'
 import PrioritizationSlider from './PrioritizationSlider'
+import ManualRuleBuilder from './ManualRuleBuilder'
 
 type Rule = Record<string, any>
 
-export default function RuleManager() {
-  const [rules, setRules] = useState<Rule[]>([])
+interface RuleManagerProps {
+  rules: Rule[]
+  setRules: React.Dispatch<React.SetStateAction<Rule[]>>
+  priorities: Record<string, number>
+  setPriorities: React.Dispatch<React.SetStateAction<Record<string, number>>>
+}
+
+export default function RuleManager({ rules, setRules, priorities, setPriorities }: RuleManagerProps) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [priorities, setPriorities] = useState<Record<string, number>>({})
 
   async function addRule() {
     if (!input.trim()) return
@@ -62,6 +68,9 @@ export default function RuleManager() {
         </button>
       </div>
       {error && <p className="text-red-600 text-sm">{error}</p>}
+
+      {/* Manual Rule Builder */}
+      <ManualRuleBuilder onAddRule={(rule) => setRules((prev) => [...prev, rule])} />
 
       {/* Rules List */}
       {rules.length > 0 && (
