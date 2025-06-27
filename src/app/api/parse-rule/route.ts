@@ -8,6 +8,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Rule text is required' }, { status: 400 })
     }
 
+    if (!process.env.OPENROUTER_API_KEY) {
+      return NextResponse.json({ error: 'OpenRouter API key not configured' }, { status: 500 })
+    }
+
     const prompt = `
 You are a JSON rule generator for a spreadsheet AI tool. Convert natural language rules into structured JSON configurations.
 
