@@ -83,7 +83,7 @@ export default function DataTable({
   onDataChange?: (rowIndex: number, columnId: string, value: string) => void
 }) {
   const columns: ColumnDef<any>[] = data.length
-    ? Object.keys(data[0] || {}).map((key) => ({
+    ? Object.keys(data[0]).map((key) => ({
       accessorKey: key,
       header: key,
       cell: ({ getValue, row, column }: { getValue: () => any; row: any; column: any }) => {
