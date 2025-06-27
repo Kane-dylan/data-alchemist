@@ -1,0 +1,33 @@
+{
+  "rules": [
+    {
+      "rules": [
+        {
+          "type": "coRun",
+          "tasks": [
+            "T12",
+            "T14"
+          ]
+        },
+        {
+          "type": "loadLimit",
+          "group": "A",
+          "maxSlotsPerPhase": 2
+        },
+        {
+          "type": "validation",
+          "field": "priority",
+          "min": 1,
+          "max": 5
+        }
+      ]
+    }
+  ],
+  "priorities": {
+    "PriorityLevel": 50,
+    "RequestedTaskFulfillment": 30,
+    "Fairness": 10,
+    "CostEfficiency": 5,
+    "WorkloadBalance": 5
+  }
+}
