@@ -5,6 +5,12 @@ export interface StoredData {
   tasks: any[]
   lastUpload: string
   priorityConfig?: any
+  uploadedFiles?: {
+    clients?: { name: string; uploadDate: string; rowCount: number }
+    workers?: { name: string; uploadDate: string; rowCount: number }
+    tasks?: { name: string; uploadDate: string; rowCount: number }
+  }
+  rules?: any[]
 }
 
 const STORAGE_KEY = 'data-alchemist-state'

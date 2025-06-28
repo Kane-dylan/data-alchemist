@@ -71,7 +71,7 @@ export default function InlineStatsPanel({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-6 left-6 z-40 w-80"
+      className="w-full"
     >
       <Card className="shadow-lg border-2 border-gray-200 bg-white">
         <CardHeader className="pb-3">

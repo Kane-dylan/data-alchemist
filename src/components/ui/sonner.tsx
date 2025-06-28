@@ -10,30 +10,31 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="light" // Force light theme for better readability
       className="toaster group"
       position="top-right"
       offset="20px"
       toastOptions={{
         duration: 4000,
         style: {
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
           backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(0, 0, 0, 0.1)',
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(0, 0, 0, 0.2)',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
+          color: '#000000', // Ensure black text
         },
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background/95 group-[.toaster]:backdrop-blur-sm group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg group-[.toaster]:border group-[.toaster]:rounded-lg",
-          description: "group-[.toast]:text-muted-foreground group-[.toast]:text-sm",
+            "group toast group-[.toaster]:bg-white group-[.toaster]:backdrop-blur-sm group-[.toaster]:text-black group-[.toaster]:border-gray-300 group-[.toaster]:shadow-lg group-[.toaster]:border group-[.toaster]:rounded-lg",
+          description: "group-[.toast]:text-gray-700 group-[.toast]:text-sm font-medium",
           actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:hover:bg-primary/90",
+            "group-[.toast]:bg-black group-[.toast]:text-white group-[.toast]:hover:bg-gray-800",
           cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground group-[.toast]:hover:bg-muted/80",
-          success: "group-[.toaster]:border-green-200 group-[.toaster]:bg-green-50/95",
-          error: "group-[.toaster]:border-red-200 group-[.toaster]:bg-red-50/95",
-          warning: "group-[.toaster]:border-yellow-200 group-[.toaster]:bg-yellow-50/95",
-          info: "group-[.toaster]:border-blue-200 group-[.toaster]:bg-blue-50/95",
+            "group-[.toast]:bg-gray-200 group-[.toast]:text-black group-[.toast]:hover:bg-gray-300",
+          success: "group-[.toaster]:border-green-300 group-[.toaster]:bg-green-50/98 group-[.toaster]:text-black",
+          error: "group-[.toaster]:border-red-300 group-[.toaster]:bg-red-50/98 group-[.toaster]:text-black",
+          warning: "group-[.toaster]:border-yellow-300 group-[.toaster]:bg-yellow-50/98 group-[.toaster]:text-black",
+          info: "group-[.toaster]:border-blue-300 group-[.toaster]:bg-blue-50/98 group-[.toaster]:text-black",
         },
       }}
       {...props}

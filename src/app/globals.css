@@ -85,3 +85,35 @@
     color: var(--foreground);
   }
 }
+
+/* Toast styling for better readability */
+[data-sonner-toast] {
+  background-color: white !important;
+  border: 1px solid #e5e7eb !important;
+  color: black !important;
+}
+
+[data-sonner-toast] [data-title] {
+  color: black !important;
+  font-weight: 600 !important;
+}
+
+[data-sonner-toast] [data-description] {
+  color: #374151 !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  border-color: #10b981 !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-color: #ef4444 !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  border-color: #3b82f6 !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border-color: #f59e0b !important;
+}

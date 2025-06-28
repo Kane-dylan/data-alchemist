@@ -6,7 +6,7 @@ import { Database } from 'lucide-react'
 
 // Components
 import ModernFileUpload from '@/components/ModernFileUpload'
-import DataTable from '@/components/DataTable'
+import TabbedDataView from '@/components/TabbedDataView'
 import ModularRuleManager from '@/components/ModularRuleManager'
 import EnhancedFilter from '@/components/EnhancedFilter'
 import EnhancedPrioritySlider from '@/components/EnhancedPrioritySlider'
@@ -60,6 +60,12 @@ export default function Home() {
     presetProfile: ''
   })
 
+  // Uploaded files metadata
+  const [uploadedFiles, setUploadedFiles] = useState<{
+    clients?: { name: string; uploadDate: string; rowCount: number }
+    workers?: { name: string; uploadDate: string; rowCount: number }
+    tasks?: { name: string; uploadDate: string; rowCount: number }
+  }>({})
   // Load persisted data on mount
   useEffect(() => {
     const storedData = DataStorage.load()
@@ -73,6 +79,29 @@ export default function Home() {
 
       if (storedData.priorityConfig) {
         setPriorityConfig(storedData.priorityConfig)
+      }
+
+      if (storedData.uploadedFiles) {
+        // Handle backward compatibility for files without rowCount
+        const compatibleFiles = {
+          clients: storedData.uploadedFiles.clients ? {
+            ...storedData.uploadedFiles.clients,
+            rowCount: storedData.uploadedFiles.clients.rowCount || storedData.clients.length
+          } : undefined,
+          workers: storedData.uploadedFiles.workers ? {
+            ...storedData.uploadedFiles.workers,
+            rowCount: storedData.uploadedFiles.workers.rowCount || storedData.workers.length
+          } : undefined,
+          tasks: storedData.uploadedFiles.tasks ? {
+            ...storedData.uploadedFiles.tasks,
+            rowCount: storedData.uploadedFiles.tasks.rowCount || storedData.tasks.length
+          } : undefined,
+        }
+        setUploadedFiles(compatibleFiles)
+      }
+
+      if (storedData.rules) {
+        setRules(storedData.rules)
       }
 
       // Set initial data based on what's available
@@ -96,16 +125,18 @@ export default function Home() {
 
   // Save data to localStorage whenever it changes
   useEffect(() => {
-    if (clients.length > 0 || workers.length > 0 || tasks.length > 0) {
+    if (clients.length > 0 || workers.length > 0 || tasks.length > 0 || rules.length > 0) {
       DataStorage.save({
         clients,
         workers,
         tasks,
         lastUpload: new Date().toISOString(),
-        priorityConfig
+        priorityConfig,
+        uploadedFiles,
+        rules
       })
     }
-  }, [clients, workers, tasks, priorityConfig])
+  }, [clients, workers, tasks, priorityConfig, uploadedFiles, rules])
 
   const updateValidationState = (uploadEntityType: 'client' | 'worker' | 'task', dataToValidate: any[]) => {
     const results = runValidations(uploadEntityType, dataToValidate)
@@ -137,23 +168,41 @@ export default function Home() {
     }
   }
 
-  const handleDataUpload = (parsed: any[], uploadEntityType: 'client' | 'worker' | 'task') => {
+  const handleDataUpload = (parsed: any[], uploadEntityType: 'client' | 'worker' | 'task', filename?: string) => {
     setData(parsed)
     setEntityType(uploadEntityType)
+
+    const fileInfo = {
+      name: filename || `${uploadEntityType}_data.csv`,
+      uploadDate: new Date().toISOString(),
+      rowCount: parsed.length
+    }
 
     // Store data in entity-specific state
     switch (uploadEntityType) {
       case 'client':
         setClients(parsed)
         setOriginalClients(parsed)
+        setUploadedFiles(prev => ({
+          ...prev,
+          clients: fileInfo
+        }))
         break
       case 'worker':
         setWorkers(parsed)
         setOriginalWorkers(parsed)
+        setUploadedFiles(prev => ({
+          ...prev,
+          workers: fileInfo
+        }))
         break
       case 'task':
         setTasks(parsed)
         setOriginalTasks(parsed)
+        setUploadedFiles(prev => ({
+          ...prev,
+          tasks: fileInfo
+        }))
         break
     }
 
@@ -273,6 +322,63 @@ export default function Home() {
     }
   }, [clients, workers, tasks, priorityConfig, rules])
 
+  const handleTabChange = (entityType: 'client' | 'worker' | 'task') => {
+    setEntityType(entityType)
+    const dataToShow = entityType === 'client' ? clients :
+      entityType === 'worker' ? workers : tasks
+    setData(dataToShow)
+    updateValidationState(entityType, dataToShow)
+  }
+
+  const handleDeleteTab = (entityType: 'client' | 'worker' | 'task') => {
+    switch (entityType) {
+      case 'client':
+        setClients([])
+        setOriginalClients([])
+        setUploadedFiles(prev => {
+          const newFiles = { ...prev }
+          delete newFiles.clients
+          return newFiles
+        })
+        break
+      case 'worker':
+        setWorkers([])
+        setOriginalWorkers([])
+        setUploadedFiles(prev => {
+          const newFiles = { ...prev }
+          delete newFiles.workers
+          return newFiles
+        })
+        break
+      case 'task':
+        setTasks([])
+        setOriginalTasks([])
+        setUploadedFiles(prev => {
+          const newFiles = { ...prev }
+          delete newFiles.tasks
+          return newFiles
+        })
+        break
+    }
+
+    // Switch to another available tab if current one is deleted
+    const remainingData = [
+      { type: 'client' as const, data: entityType === 'client' ? [] : clients },
+      { type: 'worker' as const, data: entityType === 'worker' ? [] : workers },
+      { type: 'task' as const, data: entityType === 'task' ? [] : tasks }
+    ].find(item => item.data.length > 0)
+
+    if (remainingData) {
+      setEntityType(remainingData.type)
+      setData(remainingData.data)
+      updateValidationState(remainingData.type, remainingData.data)
+    } else {
+      setData([])
+      setErrors([])
+      setValidationResults([])
+    }
+  }
+
   const hasData = clients.length > 0 || workers.length > 0 || tasks.length > 0
 
   return (
@@ -354,11 +460,16 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <DataTable
-                    data={data}
+                  <TabbedDataView
+                    clients={clients}
+                    workers={workers}
+                    tasks={tasks}
                     errors={errors}
-                    entityType={entityType}
+                    currentEntityType={entityType}
+                    uploadedFiles={uploadedFiles}
+                    onTabChange={handleTabChange}
                     onDataChange={handleDataChange}
+                    onDeleteTab={handleDeleteTab}
                   />
                 </motion.div>
               </>
@@ -367,6 +478,22 @@ export default function Home() {
 
           {/* Right Column - Configuration */}
           <div className="space-y-8">
+            {/* Data Health Panel */}
+            {data.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <InlineStatsPanel
+                  clients={clients}
+                  workers={workers}
+                  tasks={tasks}
+                  validationResults={validationResults}
+                />
+              </motion.div>
+            )}
+
             {/* Rule Management */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -397,15 +524,6 @@ export default function Home() {
 
       {/* Floating Components */}
       <AIAssistant onApplySuggestion={handleAISuggestion} />
-
-      {data.length > 0 && (
-        <InlineStatsPanel
-          clients={clients}
-          workers={workers}
-          tasks={tasks}
-          validationResults={validationResults}
-        />
-      )}
     </div>
   )
 }

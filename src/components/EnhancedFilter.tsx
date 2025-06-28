@@ -58,6 +58,11 @@ export default function EnhancedFilter({
       return
     }
 
+    if (!entityType) {
+      toast.error('Entity type is required')
+      return
+    }
+
     setIsProcessing(true)
     toast.loading('Processing filter...', { id: 'filter' })
 
@@ -70,7 +75,7 @@ export default function EnhancedFilter({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            naturalLanguageQuery: query,
+            query, // Changed from naturalLanguageQuery to query
             data: data.slice(0, 5), // Send sample for context
             entityType,
           }),
@@ -80,13 +85,20 @@ export default function EnhancedFilter({
 
         if (result.error) throw new Error(result.error)
 
-        // Apply the AI-generated filter
-        filteredData = data.filter((item) => {
+        if (!result.expression) {
+          throw new Error('No filter expression generated')
+        }
+
+        // Apply the AI-generated filter with safer evaluation
+        filteredData = data.filter((row) => {
           try {
-            // Simple evaluation - in production, use a safer expression evaluator
-            const expression = result.expression.replace(/\b\w+\b/g, (match: string) => `item.${match}`)
-            return eval(expression)
-          } catch {
+            // Replace item with row to match the API response format
+            const expression = result.expression.replace(/\bitem\./g, 'row.')
+            // Use Function constructor for safer evaluation than eval
+            const filterFunction = new Function('row', `return ${expression}`)
+            return filterFunction(row)
+          } catch (evalError) {
+            console.warn('Filter expression evaluation error:', evalError)
             return true // Fallback to show all data if expression fails
           }
         })
