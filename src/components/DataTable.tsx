@@ -61,7 +61,7 @@ function EditableCell({
 
   return (
     <input
-      className={`p-1 border w-full ${displayError ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+      className={`p-2 border w-full rounded text-black ${displayError ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}
@@ -113,24 +113,24 @@ export default function DataTable({
   })
 
   return (
-    <div className="overflow-auto max-h-[70vh] border p-2 rounded">
-      <table className="min-w-full border">
-        <thead>
+    <div className="overflow-auto max-h-[70vh] border border-gray-200 rounded-lg bg-white shadow-sm">
+      <table className="min-w-full">
+        <thead className="bg-gray-50">
           {table.getHeaderGroups().map((group) => (
             <tr key={group.id}>
               {group.headers.map((header) => (
-                <th key={header.id} className="border px-2 py-1 bg-gray-100 text-left">
+                <th key={header.id} className="border-b border-gray-200 px-4 py-3 text-left text-sm font-medium text-black">
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </th>
               ))}
             </tr>
           ))}
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-gray-200">
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
+            <tr key={row.id} className="hover:bg-gray-50">
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="border px-2 py-1">
+                <td key={cell.id} className="px-4 py-2">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
