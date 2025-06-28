@@ -1,36 +1,143 @@
 'use client'
-import { useState } from 'react'
-import FileUpload from '@/components/FileUpload'
+
+import React, { useState, useEffect, useCallback } from 'react'
+import { motion } from 'framer-motion'
+import { Database } from 'lucide-react'
+
+// Components
+import ModernFileUpload from '@/components/ModernFileUpload'
 import DataTable from '@/components/DataTable'
-import RuleManager from '@/components/RuleManager'
-import NaturalLanguageFilter from '@/components/NaturalLanguageFilter'
+import ModularRuleManager from '@/components/ModularRuleManager'
+import EnhancedFilter from '@/components/EnhancedFilter'
+import EnhancedPrioritySlider from '@/components/EnhancedPrioritySlider'
+import AIAssistant from '@/components/AIAssistant'
+import InlineStatsPanel from '@/components/InlineStatsPanel'
+
+// Utils
 import { runValidations, ValidationResult } from '@/utils/validationEngine'
-import { downloadCSV, downloadJSON } from '@/utils/download'
-import JSZip from 'jszip'
-import { saveAs } from 'file-saver'
-import Papa from 'papaparse'
+import { DataStorage } from '@/utils/dataStorage'
+import { exportDataPackage } from '@/utils/exportUtility'
+import { toast } from 'sonner'
+
+interface Rule {
+  id: string
+  type: string
+  description: string
+  data: any
+  confidence?: number
+}
+
+interface PriorityConfiguration {
+  weights: Record<string, number>
+  ranking: string[]
+  pairwiseMatrix: Record<string, Record<string, number>>
+  presetProfile: string
+}
 
 export default function Home() {
+  // Core data state
   const [data, setData] = useState<any[]>([])
-  const [errors, setErrors] = useState<Record<string, string>[]>([])
   const [entityType, setEntityType] = useState<'client' | 'worker' | 'task'>('client')
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([])
+  const [errors, setErrors] = useState<Record<string, string>[]>([])
 
   // Entity-specific data storage
   const [clients, setClients] = useState<any[]>([])
   const [workers, setWorkers] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
 
-  // Original data (for reset functionality)
+  // Original data for reset functionality
   const [originalClients, setOriginalClients] = useState<any[]>([])
   const [originalWorkers, setOriginalWorkers] = useState<any[]>([])
   const [originalTasks, setOriginalTasks] = useState<any[]>([])
 
-  // Rules and priorities state (lifted from RuleManager)
-  const [rules, setRules] = useState<any[]>([])
-  const [priorities, setPriorities] = useState<Record<string, number>>({})
+  // Rules and priorities
+  const [rules, setRules] = useState<Rule[]>([])
+  const [priorityConfig, setPriorityConfig] = useState<PriorityConfiguration>({
+    weights: {},
+    ranking: [],
+    pairwiseMatrix: {},
+    presetProfile: ''
+  })
 
-  function handleDataUpload(parsed: any[], uploadEntityType: 'client' | 'worker' | 'task') {
+  // Load persisted data on mount
+  useEffect(() => {
+    const storedData = DataStorage.load()
+    if (storedData) {
+      setClients(storedData.clients || [])
+      setWorkers(storedData.workers || [])
+      setTasks(storedData.tasks || [])
+      setOriginalClients(storedData.clients || [])
+      setOriginalWorkers(storedData.workers || [])
+      setOriginalTasks(storedData.tasks || [])
+
+      if (storedData.priorityConfig) {
+        setPriorityConfig(storedData.priorityConfig)
+      }
+
+      // Set initial data based on what's available
+      if (storedData.clients.length > 0) {
+        setData(storedData.clients)
+        setEntityType('client')
+      } else if (storedData.workers.length > 0) {
+        setData(storedData.workers)
+        setEntityType('worker')
+      } else if (storedData.tasks.length > 0) {
+        setData(storedData.tasks)
+        setEntityType('task')
+      }
+
+      toast.success('Data restored from previous session', {
+        description: `Loaded ${storedData.clients.length + storedData.workers.length + storedData.tasks.length} records`,
+        duration: 4000,
+      })
+    }
+  }, [])
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    if (clients.length > 0 || workers.length > 0 || tasks.length > 0) {
+      DataStorage.save({
+        clients,
+        workers,
+        tasks,
+        lastUpload: new Date().toISOString(),
+        priorityConfig
+      })
+    }
+  }, [clients, workers, tasks, priorityConfig])
+
+  const updateValidationState = (uploadEntityType: 'client' | 'worker' | 'task', dataToValidate: any[]) => {
+    const results = runValidations(uploadEntityType, dataToValidate)
+    setValidationResults(results)
+
+    const errorMap: Record<string, string>[] = []
+    dataToValidate.forEach((_, index) => {
+      const rowErrors: Record<string, string> = {}
+      results
+        .filter(result => result.rowIndex === index)
+        .forEach(result => {
+          rowErrors[result.column] = result.message
+        })
+      errorMap[index] = rowErrors
+    })
+    setErrors(errorMap)
+
+    // Show validation summary
+    if (results.length > 0) {
+      toast.error(`Found ${results.length} validation errors`, {
+        description: 'Check the data table for details and corrections needed.',
+        duration: 6000,
+      })
+    } else {
+      toast.success('Data validation passed!', {
+        description: 'All records meet quality standards.',
+        duration: 3000,
+      })
+    }
+  }
+
+  const handleDataUpload = (parsed: any[], uploadEntityType: 'client' | 'worker' | 'task') => {
     setData(parsed)
     setEntityType(uploadEntityType)
 
@@ -50,63 +157,12 @@ export default function Home() {
         break
     }
 
-    // Run validation using the new validation engine
-    const results = runValidations(uploadEntityType, parsed)
-    setValidationResults(results)
-
-    // Convert validation results to the format expected by DataTable
-    const errorMap: Record<string, string>[] = []
-    parsed.forEach((_, index) => {
-      const rowErrors: Record<string, string> = {}
-      results
-        .filter(result => result.rowIndex === index)
-        .forEach(result => {
-          rowErrors[result.column] = result.message
-        })
-      errorMap[index] = rowErrors
-    })
-    setErrors(errorMap)
+    updateValidationState(uploadEntityType, parsed)
   }
 
-  function resetFilters() {
-    setClients(originalClients)
-    setWorkers(originalWorkers)
-    setTasks(originalTasks)
-    // Reset the displayed data to match current entity type
-    switch (entityType) {
-      case 'client':
-        setData(originalClients)
-        break
-      case 'worker':
-        setData(originalWorkers)
-        break
-      case 'task':
-        setData(originalTasks)
-        break
-    }
-
-    // Re-run validation on the reset data
-    const dataToValidate = entityType === 'client' ? originalClients :
-      entityType === 'worker' ? originalWorkers : originalTasks
-    const results = runValidations(entityType, dataToValidate)
-    setValidationResults(results)
-
-    // Convert validation results to the format expected by DataTable
-    const errorMap: Record<string, string>[] = []
-    dataToValidate.forEach((_, index) => {
-      const rowErrors: Record<string, string> = {}
-      results
-        .filter(result => result.rowIndex === index)
-        .forEach(result => {
-          rowErrors[result.column] = result.message
-        })
-      errorMap[index] = rowErrors
-    })
-    setErrors(errorMap)
-  }
-
-  function handleFilteredData(filteredData: any[]) {
+  const handleFilteredData = (filteredData: any[]) => {
     setData(filteredData)
+
     // Update the appropriate entity-specific state
     switch (entityType) {
       case 'client':
@@ -120,73 +176,28 @@ export default function Home() {
         break
     }
 
-    // Re-run validation on the filtered data
-    const results = runValidations(entityType, filteredData)
-    setValidationResults(results)
+    updateValidationState(entityType, filteredData)
+  }
 
-    // Convert validation results to the format expected by DataTable
-    const errorMap: Record<string, string>[] = []
-    filteredData.forEach((_, index) => {
-      const rowErrors: Record<string, string> = {}
-      results
-        .filter(result => result.rowIndex === index)
-        .forEach(result => {
-          rowErrors[result.column] = result.message
-        })
-      errorMap[index] = rowErrors
+  const resetFilters = () => {
+    setClients(originalClients)
+    setWorkers(originalWorkers)
+    setTasks(originalTasks)
+
+    // Reset the displayed data to match current entity type
+    const dataToReset = entityType === 'client' ? originalClients :
+      entityType === 'worker' ? originalWorkers : originalTasks
+
+    setData(dataToReset)
+    updateValidationState(entityType, dataToReset)
+
+    toast.success('Filters reset', {
+      description: 'Showing original dataset.',
+      duration: 2000,
     })
-    setErrors(errorMap)
   }
 
-  async function handleExportAllAsZip() {
-    if (clients.length === 0 || workers.length === 0 || tasks.length === 0) {
-      alert('Please upload and fix all data before exporting.')
-      return
-    }
-
-    if (rules.length === 0) {
-      alert('You must add some rules before exporting.')
-      return
-    }
-
-    try {
-      const zip = new JSZip()
-
-      zip.file('rules.json', JSON.stringify({ rules, priorities }, null, 2))
-      zip.file('clients_clean.csv', Papa.unparse(clients))
-      zip.file('workers_clean.csv', Papa.unparse(workers))
-      zip.file('tasks_clean.csv', Papa.unparse(tasks))
-
-      const blob = await zip.generateAsync({ type: 'blob' })
-      saveAs(blob, 'cleaned_dataset_bundle.zip')
-
-      alert('ZIP file has been downloaded successfully!')
-    } catch (error) {
-      console.error('Error creating ZIP:', error)
-      alert('Error creating ZIP file. Please try again.')
-    }
-  }
-
-  function handleExportAll() {
-    if (clients.length === 0 || workers.length === 0 || tasks.length === 0) {
-      alert('Please upload and fix all data before exporting.')
-      return
-    }
-
-    if (rules.length === 0) {
-      alert('You must add some rules before exporting.')
-      return
-    }
-
-    downloadCSV(clients, 'clients_clean.csv')
-    downloadCSV(workers, 'workers_clean.csv')
-    downloadCSV(tasks, 'tasks_clean.csv')
-    downloadJSON({ rules, priorities }, 'rules.json')
-
-    alert('All files have been downloaded successfully!')
-  }
-
-  function handleDataChange(rowIndex: number, columnId: string, value: string) {
+  const handleDataChange = (rowIndex: number, columnId: string, value: string) => {
     const updatedData = [...data]
     updatedData[rowIndex] = { ...updatedData[rowIndex], [columnId]: value }
     setData(updatedData)
@@ -210,142 +221,191 @@ export default function Home() {
         break
     }
 
-    // Re-run validation
-    const results = runValidations(entityType, updatedData)
-    setValidationResults(results)
-
-    // Convert validation results to the format expected by DataTable
-    const errorMap: Record<string, string>[] = []
-    updatedData.forEach((_, index) => {
-      const rowErrors: Record<string, string> = {}
-      results
-        .filter(result => result.rowIndex === index)
-        .forEach(result => {
-          rowErrors[result.column] = result.message
-        })
-      errorMap[index] = rowErrors
-    })
-    setErrors(errorMap)
+    updateValidationState(entityType, updatedData)
   }
 
+  const handleAISuggestion = (suggestion: any) => {
+    switch (suggestion.type) {
+      case 'rule':
+        const newRule: Rule = {
+          id: Date.now().toString(),
+          type: 'ai-generated',
+          description: suggestion.title,
+          data: { type: 'ai', description: suggestion.description },
+          confidence: suggestion.confidence,
+        }
+        setRules(prev => [...prev, newRule])
+        toast.success('AI suggestion applied!', {
+          description: `Added rule: ${suggestion.title}`,
+          duration: 4000,
+        })
+        break
+      case 'filter':
+        toast.info('Filter suggestion received', {
+          description: 'This would apply the suggested filter to your data.',
+        })
+        break
+      case 'validation':
+        toast.info('Validation suggestion received', {
+          description: 'This would add the suggested validation rule.',
+        })
+        break
+    }
+  }
+
+  const handlePriorityConfigChange = useCallback((config: PriorityConfiguration) => {
+    setPriorityConfig(config)
+  }, [])
+
+  const handleExport = useCallback(async () => {
+    try {
+      await exportDataPackage({
+        clients,
+        workers,
+        tasks,
+        priorityConfig,
+        rules
+      })
+    } catch {
+      toast.error('Export failed', {
+        description: 'There was an error preparing your export package.'
+      })
+    }
+  }, [clients, workers, tasks, priorityConfig, rules])
+
+  const hasData = clients.length > 0 || workers.length > 0 || tasks.length > 0
+
   return (
-    <main className="max-w-4xl mx-auto py-10 px-4 space-y-8">
-      <h1 className="text-2xl font-bold">AI Data Cleaner</h1>
-
-      {/* File Upload Section */}
-      <FileUpload onData={handleDataUpload} />
-
-      {/* Data Table */}
-      {data.length > 0 && <DataTable data={data} errors={errors} entityType={entityType} onDataChange={handleDataChange} />}
-
-      {/* Natural Language Filter */}
-      {data.length > 0 && (
-        <section className="space-y-4">
-          <h3 className="text-lg font-semibold">Smart Data Filtering</h3>
-          <div className="flex gap-4 items-start">
-            <div className="flex-1">
-              <NaturalLanguageFilter
-                entityType={entityType}
-                data={data}
-                onFiltered={handleFilteredData}
-              />
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                <Database className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-black">
+                  Data Alchemist
+                </h1>
+                <p className="text-sm text-gray-600">
+                  AI-powered data cleaning and rule management
+                </p>
+              </div>
             </div>
-            <button
-              onClick={resetFilters}
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors whitespace-nowrap"
-            >
-              Reset Filters
-            </button>
-          </div>
-          <div className="text-xs text-gray-500">
-            <strong>Examples:</strong>
-            <ul className="list-disc ml-5 mt-1">
-              <li><em>Tasks:</em> "duration greater than 1" or "category equals ETL" or "preferred phases include 3"</li>
-              <li><em>Clients:</em> "priority level is 5" or "client name contains Corp" or "group tag equals GroupA"</li>
-              <li><em>Workers:</em> "qualification level greater than 5" or "skills include coding" or "worker group equals GroupB"</li>
-            </ul>
-          </div>
-        </section>
-      )}
 
-      {/* Validation Summary */}
-      {validationResults.length > 0 && (
-        <div className="p-4 border rounded bg-yellow-50">
-          <h2 className="font-semibold">Validation Summary ({entityType} data)</h2>
-          <p className="text-sm text-gray-600 mb-2">
-            Found {validationResults.length} validation error(s)
-          </p>
-          <ul className="list-disc ml-6 text-sm mt-2 max-h-40 overflow-y-auto">
-            {validationResults.map((result, idx) => (
-              <li key={idx}>
-                Row {result.rowIndex + 1}, <strong>{result.column}</strong>: {result.message}
-              </li>
-            ))}
-          </ul>
+            <div className="flex items-center gap-2">
+              <div className="text-right mr-4">
+                <div className="text-sm font-medium text-black">
+                  {clients.length + workers.length + tasks.length} Records
+                </div>
+                <div className="text-xs text-gray-600">
+                  {validationResults.length} Issues
+                </div>
+              </div>
+              <button
+                onClick={handleExport}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                Export Data
+              </button>
+            </div>
+          </motion.div>
         </div>
-      )}
+      </header>
 
-      {/* CSV Export Section */}
-      {(clients.length > 0 || workers.length > 0 || tasks.length > 0) && (
-        <section className="space-y-4">
-          <h3 className="text-lg font-semibold">Export Cleaned Data</h3>
-          <div className="flex flex-wrap gap-2">
-            {clients.length > 0 && (
-              <button
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-                onClick={() => downloadCSV(clients, 'clients_clean.csv')}
-              >
-                Export Clients CSV ({clients.length} rows)
-              </button>
-            )}
-            {workers.length > 0 && (
-              <button
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-                onClick={() => downloadCSV(workers, 'workers_clean.csv')}
-              >
-                Export Workers CSV ({workers.length} rows)
-              </button>
-            )}
-            {tasks.length > 0 && (
-              <button
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-                onClick={() => downloadCSV(tasks, 'tasks_clean.csv')}
-              >
-                Export Tasks CSV ({tasks.length} rows)
-              </button>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Data Management */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* File Upload */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <ModernFileUpload onData={handleDataUpload} />
+            </motion.div>
+
+            {/* Data Table with Filter */}
+            {data.length > 0 && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <EnhancedFilter
+                    data={data}
+                    entityType={entityType}
+                    onFilteredData={handleFilteredData}
+                    onResetFilters={resetFilters}
+                  />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <DataTable
+                    data={data}
+                    errors={errors}
+                    entityType={entityType}
+                    onDataChange={handleDataChange}
+                  />
+                </motion.div>
+              </>
             )}
           </div>
 
-          {/* Export All Buttons */}
-          <div className="flex gap-3 mt-4">
-            <button
-              className="bg-black text-white px-6 py-3 rounded hover:bg-gray-800 transition-colors"
-              onClick={handleExportAll}
+          {/* Right Column - Configuration */}
+          <div className="space-y-8">
+            {/* Rule Management */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
             >
-              🚀 Generate & Export All
-            </button>
-            <button
-              className="bg-purple-600 text-white px-6 py-3 rounded hover:bg-purple-700 transition-colors"
-              onClick={handleExportAllAsZip}
+              <ModularRuleManager
+                rules={rules}
+                setRules={setRules}
+              />
+            </motion.div>
+
+            {/* Priority Configuration */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              📦 Export All as ZIP
-            </button>
+              <EnhancedPrioritySlider
+                onChange={handlePriorityConfigChange}
+                onExport={handleExport}
+                hasData={hasData}
+              />
+            </motion.div>
           </div>
+        </div>
+      </main>
 
-          <p className="text-sm text-gray-600">
-            Export your cleaned, header-mapped data as CSV files for use in other applications.
-            Use "Generate & Export All" to download files separately or "Export All as ZIP" for a bundled download.
-          </p>
-        </section>
+      {/* Floating Components */}
+      <AIAssistant onApplySuggestion={handleAISuggestion} />
+
+      {data.length > 0 && (
+        <InlineStatsPanel
+          clients={clients}
+          workers={workers}
+          tasks={tasks}
+          validationResults={validationResults}
+        />
       )}
-
-      {/* Rule Manager Section */}
-      <RuleManager
-        rules={rules}
-        setRules={setRules}
-        priorities={priorities}
-        setPriorities={setPriorities}
-      />
-    </main>
+    </div>
   )
 }
