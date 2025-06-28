@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
@@ -9,10 +10,9 @@ import { Slider } from '@/components/ui/slider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { GripVertical, Download, Database, BarChart3, Target, Scale, Clock } from 'lucide-react'
+import { GripVertical, Download, Database, BarChart3, Target, Scale, Clock, ChevronUp, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface PriorityConfiguration {
@@ -82,6 +82,7 @@ export default function EnhancedPrioritySlider({ onChange, onExport, hasData }: 
   const [pairwiseMatrix, setPairwiseMatrix] = useState<Record<string, Record<string, number>>>({})
   const [selectedPreset, setSelectedPreset] = useState<string>('')
   const [inputMethod, setInputMethod] = useState<'sliders' | 'ranking' | 'pairwise' | 'preset'>('sliders')
+  const [isExpanded, setIsExpanded] = useState(true)
 
   // Use ref to store the latest onChange callback to avoid dependency issues
   const onChangeRef = useRef(onChange)
@@ -171,19 +172,32 @@ export default function EnhancedPrioritySlider({ onChange, onExport, hasData }: 
 
   return (
     <Card className="w-full bg-white border border-gray-200 shadow-sm">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl text-black flex items-center gap-2">
-          <Database className="h-5 w-5" />
-          Prioritization & Weights
-        </CardTitle>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg text-black">
+            <Database className="h-5 w-5" />
+            Prioritization & Weights
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="h-8 w-8 p-0 hover:bg-gray-100"
+          >
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent>
-        <Accordion type="single" collapsible className="w-full" defaultValue="prioritization">
-          <AccordionItem value="prioritization" className="border-gray-200">
-            <AccordionTrigger className="text-black hover:no-underline hover:bg-gray-50 px-4 py-3 rounded-t-lg">
-              <span className="font-medium">Configure Priority Settings</span>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4 space-y-6">
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <CardContent className="space-y-6">
               {/* Input Method Selection */}
               <div className="space-y-3">
                 <label className="text-sm font-medium text-black">Input Method</label>
@@ -364,10 +378,10 @@ export default function EnhancedPrioritySlider({ onChange, onExport, hasData }: 
                   </p>
                 )}
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </CardContent>
+            </CardContent>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Card>
   )
 }

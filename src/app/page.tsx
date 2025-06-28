@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Database } from 'lucide-react'
+import { Database, ChevronDown } from 'lucide-react'
 
 // Components
 import ModernFileUpload from '@/components/ModernFileUpload'
@@ -12,11 +12,21 @@ import EnhancedFilter from '@/components/EnhancedFilter'
 import EnhancedPrioritySlider from '@/components/EnhancedPrioritySlider'
 import AIAssistant from '@/components/AIAssistant'
 import InlineStatsPanel from '@/components/InlineStatsPanel'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 // Utils
 import { runValidations, ValidationResult } from '@/utils/validationEngine'
 import { DataStorage } from '@/utils/dataStorage'
-import { exportDataPackage } from '@/utils/exportUtility'
+import { 
+  exportDataPackage, 
+  exportClientsCSV, 
+  exportWorkersCSV, 
+  exportTasksCSV, 
+  exportRulesJSON, 
+  exportExcelFile 
+} from '@/utils/exportUtility'
 import { toast } from 'sonner'
 
 interface Rule {
@@ -315,10 +325,78 @@ export default function Home() {
         priorityConfig,
         rules
       })
+      toast.success('ZIP package exported successfully!')
     } catch {
       toast.error('Export failed', {
         description: 'There was an error preparing your export package.'
       })
+    }
+  }, [clients, workers, tasks, priorityConfig, rules])
+
+  const handleExportClients = useCallback(() => {
+    try {
+      if (clients.length === 0) {
+        toast.error('No client data to export')
+        return
+      }
+      exportClientsCSV(clients)
+      toast.success('Clients CSV exported successfully!')
+    } catch (error) {
+      toast.error('Failed to export clients CSV')
+    }
+  }, [clients])
+
+  const handleExportWorkers = useCallback(() => {
+    try {
+      if (workers.length === 0) {
+        toast.error('No worker data to export')
+        return
+      }
+      exportWorkersCSV(workers)
+      toast.success('Workers CSV exported successfully!')
+    } catch (error) {
+      toast.error('Failed to export workers CSV')
+    }
+  }, [workers])
+
+  const handleExportTasks = useCallback(() => {
+    try {
+      if (tasks.length === 0) {
+        toast.error('No task data to export')
+        return
+      }
+      exportTasksCSV(tasks)
+      toast.success('Tasks CSV exported successfully!')
+    } catch (error) {
+      toast.error('Failed to export tasks CSV')
+    }
+  }, [tasks])
+
+  const handleExportRules = useCallback(() => {
+    try {
+      if (rules.length === 0) {
+        toast.error('No rules to export')
+        return
+      }
+      exportRulesJSON(rules, priorityConfig)
+      toast.success('Rules JSON exported successfully!')
+    } catch (error) {
+      toast.error('Failed to export rules JSON')
+    }
+  }, [rules, priorityConfig])
+
+  const handleExportExcel = useCallback(() => {
+    try {
+      exportExcelFile({
+        clients,
+        workers,
+        tasks,
+        priorityConfig,
+        rules
+      })
+      toast.success('Excel file exported successfully!')
+    } catch (error) {
+      toast.error('Failed to export Excel file')
     }
   }, [clients, workers, tasks, priorityConfig, rules])
 
@@ -414,12 +492,97 @@ export default function Home() {
                   {validationResults.length} Issues
                 </div>
               </div>
-              <button
-                onClick={handleExport}
-                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                Export Data
-              </button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    className="bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+                    disabled={clients.length + workers.length + tasks.length === 0}
+                  >
+                    Export Data
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-2" align="end">
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium px-3 py-2 text-gray-700">Individual Files</div>
+                    
+                    <Button
+                      onClick={handleExportClients}
+                      disabled={clients.length === 0}
+                      variant="ghost"
+                      className="w-full justify-start text-left h-auto px-3 py-2"
+                    >
+                      <div>
+                        <div className="font-medium">Clients CSV</div>
+                        <div className="text-xs text-gray-500">{clients.length} records</div>
+                      </div>
+                    </Button>
+
+                    <Button
+                      onClick={handleExportWorkers}
+                      disabled={workers.length === 0}
+                      variant="ghost"
+                      className="w-full justify-start text-left h-auto px-3 py-2"
+                    >
+                      <div>
+                        <div className="font-medium">Workers CSV</div>
+                        <div className="text-xs text-gray-500">{workers.length} records</div>
+                      </div>
+                    </Button>
+
+                    <Button
+                      onClick={handleExportTasks}
+                      disabled={tasks.length === 0}
+                      variant="ghost"
+                      className="w-full justify-start text-left h-auto px-3 py-2"
+                    >
+                      <div>
+                        <div className="font-medium">Tasks CSV</div>
+                        <div className="text-xs text-gray-500">{tasks.length} records</div>
+                      </div>
+                    </Button>
+
+                    <Button
+                      onClick={handleExportRules}
+                      disabled={rules.length === 0}
+                      variant="ghost"
+                      className="w-full justify-start text-left h-auto px-3 py-2"
+                    >
+                      <div>
+                        <div className="font-medium">Rules JSON</div>
+                        <div className="text-xs text-gray-500">{rules.length} rules</div>
+                      </div>
+                    </Button>
+
+                    <div className="border-t border-gray-200 my-2"></div>
+                    <div className="text-sm font-medium px-3 py-2 text-gray-700">Complete Packages</div>
+
+                    <Button
+                      onClick={handleExportExcel}
+                      disabled={clients.length + workers.length + tasks.length === 0}
+                      variant="ghost"
+                      className="w-full justify-start text-left h-auto px-3 py-2"
+                    >
+                      <div>
+                        <div className="font-medium">Excel Workbook</div>
+                        <div className="text-xs text-gray-500">All data in one file</div>
+                      </div>
+                    </Button>
+
+                    <Button
+                      onClick={handleExport}
+                      disabled={clients.length + workers.length + tasks.length === 0}
+                      variant="ghost"
+                      className="w-full justify-start text-left h-auto px-3 py-2"
+                    >
+                      <div>
+                        <div className="font-medium">ZIP Package</div>
+                        <div className="text-xs text-gray-500">CSVs + Excel + Rules</div>
+                      </div>
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </motion.div>
         </div>

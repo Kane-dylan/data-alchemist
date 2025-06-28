@@ -14,6 +14,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       position="top-right"
       offset="20px"
+      closeButton={true}
       toastOptions={{
         duration: 4000,
         style: {
@@ -31,6 +32,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toast]:bg-black group-[.toast]:text-white group-[.toast]:hover:bg-gray-800",
           cancelButton:
             "group-[.toast]:bg-gray-200 group-[.toast]:text-black group-[.toast]:hover:bg-gray-300",
+          closeButton:
+            "group-[.toast]:bg-gray-200 group-[.toast]:text-black group-[.toast]:hover:bg-gray-300 group-[.toast]:border-gray-300",
           success: "group-[.toaster]:border-green-300 group-[.toaster]:bg-green-50/98 group-[.toaster]:text-black",
           error: "group-[.toaster]:border-red-300 group-[.toaster]:bg-red-50/98 group-[.toaster]:text-black",
           warning: "group-[.toaster]:border-yellow-300 group-[.toaster]:bg-yellow-50/98 group-[.toaster]:text-black",
