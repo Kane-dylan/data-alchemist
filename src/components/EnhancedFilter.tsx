@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Search, Filter, X, Sparkles, RotateCcw, Eraser } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -380,11 +380,11 @@ export default function EnhancedFilter({
     } catch (error) {
       console.error('Filter error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      
+
       // Extract more specific error information
       let userFriendlyMessage = errorMessage
       let suggestions = 'Please try rephrasing your query.'
-      
+
       if (errorMessage.includes('API request failed')) {
         userFriendlyMessage = 'Unable to connect to the AI filtering service'
         suggestions = 'Check your internet connection or try using manual filtering instead.'
@@ -398,11 +398,11 @@ export default function EnhancedFilter({
         userFriendlyMessage = 'The AI could not understand your filter request'
         suggestions = 'Try examples like: "priority > 3", "name contains Corp", "skills include coding"'
       }
-      
+
       // Don't clear the UI on error - keep everything visible
       toast.error(
         `Filter Error: ${userFriendlyMessage}`,
-        { 
+        {
           id: 'filter',
           duration: 8000,
           description: suggestions,
@@ -412,7 +412,7 @@ export default function EnhancedFilter({
           }
         }
       )
-      
+
       // Set error state but don't reset filters or data
       setLastError(`${userFriendlyMessage}. ${suggestions}`)
     } finally {
@@ -731,11 +731,11 @@ export default function EnhancedFilter({
     } catch (error) {
       console.error('Filter error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      
+
       // Extract more specific error information
       let userFriendlyMessage = errorMessage
       let suggestions = 'Please try rephrasing your query.'
-      
+
       if (errorMessage.includes('API request failed')) {
         userFriendlyMessage = 'Unable to connect to the AI filtering service'
         suggestions = 'Check your internet connection or try using manual filtering instead.'
@@ -749,11 +749,11 @@ export default function EnhancedFilter({
         userFriendlyMessage = 'The AI could not understand your filter request'
         suggestions = 'Try examples like: "priority > 3", "name contains Corp", "skills include coding"'
       }
-      
+
       // Don't clear the UI on error - keep everything visible
       toast.error(
         `Filter Error: ${userFriendlyMessage}`,
-        { 
+        {
           id: 'filter',
           duration: 8000,
           description: suggestions,
@@ -763,7 +763,7 @@ export default function EnhancedFilter({
           }
         }
       )
-      
+
       // Set error state but don't reset filters or data
       setLastError(`${userFriendlyMessage}. ${suggestions}`)
     } finally {
@@ -796,7 +796,7 @@ export default function EnhancedFilter({
       <CardContent className="space-y-4">
         {/* Enhanced Error Display */}
         {lastError && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}

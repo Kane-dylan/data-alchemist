@@ -201,7 +201,7 @@ Expression:
     }
 
     // Clean up the response to extract just the expression
-    let cleanExpression = rawText
+    const cleanExpression = rawText
       .trim()
       .replace(/^Expression:\s*/i, '')
       .replace(/^```javascript\s*/i, '')
