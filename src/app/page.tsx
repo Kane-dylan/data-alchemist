@@ -8,7 +8,7 @@ import { Database, ChevronDown } from 'lucide-react'
 import ModernFileUpload from '@/components/ModernFileUpload'
 import TabbedDataView from '@/components/TabbedDataView'
 import ModularRuleManager from '@/components/ModularRuleManager'
-import EnhancedFilter from '@/components/EnhancedFilter'
+import FilterManager from '@/components/FilterManager'
 
 import AIAssistant from '@/components/AIAssistant'
 import InlineStatsPanel from '@/components/InlineStatsPanel'
@@ -27,6 +27,7 @@ import {
   exportRulesJSON,
   exportExcelFile
 } from '@/utils/exportUtility'
+import { safeEvaluateExpression } from '@/lib/filter-utils'
 import { toast } from 'sonner'
 
 interface Rule {
@@ -58,6 +59,9 @@ export default function Home() {
 
   // Rules
   const [rules, setRules] = useState<Rule[]>([])
+
+  // Track applied AI filter queries for duplicate prevention
+  const [appliedAIFilters, setAppliedAIFilters] = useState<string[]>([])
 
   // Uploaded files metadata
   const [uploadedFiles, setUploadedFiles] = useState<{
@@ -234,6 +238,9 @@ export default function Home() {
     setData(dataToReset)
     updateValidationState(entityType, dataToReset)
 
+    // Also reset applied AI filters tracking
+    setAppliedAIFilters([])
+
     toast.success('Filters reset', {
       description: 'Showing original dataset.',
       duration: 2000,
@@ -267,32 +274,147 @@ export default function Home() {
     updateValidationState(entityType, updatedData)
   }
 
-  const handleAISuggestion = (suggestion: any) => {
-    switch (suggestion.type) {
-      case 'rule':
-        const newRule: Rule = {
-          id: Date.now().toString(),
-          type: 'ai-generated',
-          description: suggestion.title,
-          data: { type: 'ai', description: suggestion.description },
-          confidence: suggestion.confidence,
+  const handleAISuggestion = async (suggestion: any) => {
+    try {
+      switch (suggestion.type) {
+        case 'rule':
+          const newRule: Rule = {
+            id: Date.now().toString(),
+            type: 'ai-generated',
+            description: suggestion.title,
+            data: { type: 'ai', description: suggestion.description },
+            confidence: suggestion.confidence,
+          }
+          setRules(prev => [...prev, newRule])
+          toast.success('AI rule applied!', {
+            description: `Added rule: ${suggestion.title}`,
+            duration: 4000,
+          })
+          break
+
+        case 'filter':
+          if (suggestion.query && suggestion.action === 'apply_filter') {
+            // Track the applied filter query to prevent duplicates
+            setAppliedAIFilters(prev => [...prev, suggestion.query])
+
+            // Apply the filter suggestion directly to the data
+            try {
+              toast.loading('Applying AI filter suggestion...', { id: 'ai-filter' })
+
+              // Use AI filtering if available, otherwise fall back to text filtering
+              const response = await fetch('/api/filter-expression', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  query: suggestion.query,
+                  data: data.slice(0, 5), // Send sample for context
+                  entityType,
+                }),
+              })
+
+              if (response.ok) {
+                const result = await response.json()
+
+                if (result.expression && !result.error) {
+                  // Apply AI-generated filter
+                  const filteredData = data.filter((row) => {
+                    try {
+                      // Use the safeEvaluateExpression from filter-utils for consistency
+                      return safeEvaluateExpression(result.expression, row)
+                    } catch (evalError) {
+                      console.warn('AI filter evaluation error:', evalError)
+                      return false
+                    }
+                  })
+
+                  handleFilteredData(filteredData)
+
+                  toast.success(`AI filter applied! Showing ${filteredData.length} of ${data.length} records.`, {
+                    id: 'ai-filter',
+                    description: `Filter: ${suggestion.query}`,
+                    duration: 5000
+                  })
+                } else {
+                  throw new Error(result.error || 'Invalid AI filter expression')
+                }
+              } else {
+                throw new Error('AI filter service unavailable')
+              }
+            } catch (filterError) {
+              console.warn('AI filter failed, falling back to text search:', filterError)
+
+              // Fallback to simple text filtering - DO NOT break UI
+              try {
+                const searchTerm = suggestion.query.toLowerCase()
+                const filteredData = data.filter(item => {
+                  return Object.values(item || {}).some(value => {
+                    if (value == null) return false
+                    return String(value).toLowerCase().includes(searchTerm)
+                  })
+                })
+
+                handleFilteredData(filteredData)
+
+                toast.success(`Filter suggestion applied! Showing ${filteredData.length} of ${data.length} records.`, {
+                  id: 'ai-filter',
+                  description: `Used text search for: ${suggestion.query}`,
+                  duration: 5000
+                })
+              } catch (fallbackError) {
+                console.error('Fallback filter also failed:', fallbackError)
+                // Don't modify data on error - keep UI intact
+                toast.error('⚠️ Filter failed to apply', {
+                  description: 'Please check your input and try again.',
+                  duration: 6000,
+                  action: {
+                    label: 'Dismiss',
+                    onClick: () => toast.dismiss('ai-filter')
+                  }
+                })
+              }
+            }
+          } else {
+            toast.info('Filter suggestion noted', {
+              description: suggestion.description,
+              duration: 3000
+            })
+          }
+          break
+
+        case 'validation':
+          // For now, just show the suggestion - could be enhanced to add actual validation rules
+          toast.info('Validation suggestion received', {
+            description: suggestion.description,
+            duration: 4000,
+            action: {
+              label: 'Learn More',
+              onClick: () => {
+                toast.info('Validation Rules', {
+                  description: 'This feature allows you to set up automatic data quality checks.',
+                  duration: 6000
+                })
+              }
+            }
+          })
+          break
+
+        default:
+          toast.info('AI suggestion received', {
+            description: suggestion.description,
+            duration: 3000
+          })
+      }
+    } catch (error) {
+      console.error('Error applying AI suggestion:', error)
+      // Don't break UI - show friendly error message
+      toast.error('⚠️ AI suggestion failed to apply', {
+        description: 'The suggestion could not be applied. Please try again or apply it manually.',
+        duration: 6000,
+        action: {
+          label: 'Dismiss',
+          onClick: () => toast.dismiss()
         }
-        setRules(prev => [...prev, newRule])
-        toast.success('AI suggestion applied!', {
-          description: `Added rule: ${suggestion.title}`,
-          duration: 4000,
-        })
-        break
-      case 'filter':
-        toast.info('Filter suggestion received', {
-          description: 'This would apply the suggested filter to your data.',
-        })
-        break
-      case 'validation':
-        toast.info('Validation suggestion received', {
-          description: 'This would add the suggested validation rule.',
-        })
-        break
+      })
     }
   }
 
@@ -590,7 +712,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <EnhancedFilter
+                  <FilterManager
                     data={data}
                     entityType={entityType}
                     onFilteredData={handleFilteredData}
@@ -653,7 +775,12 @@ export default function Home() {
       </main>
 
       {/* Floating Components */}
-      <AIAssistant onApplySuggestion={handleAISuggestion} />
+      <AIAssistant
+        onApplySuggestion={handleAISuggestion}
+        data={data}
+        entityType={entityType}
+        appliedFilters={appliedAIFilters}
+      />
     </div>
   )
 }

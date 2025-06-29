@@ -1,0 +1,6 @@
+WorkerID,WorkerName,QualificationLevel,Skills,WorkerGroup,AvailableSlots,MaxLoadPerPhase
+W1,John Doe,5,"coding,javascript,react",GroupA,"1,2,3",3
+W2,Jane Smith,4,"coding,python,ml",GroupB,"2,3,4",2
+W3,Bob Wilson,3,"design,ui/ux,figma",GroupA,"1,4,5",2
+W4,Alice Johnson,5,"coding,data,ml,analytics",GroupC,"2,3",3
+W5,Charlie Brown,2,"testing,qa",GroupB,"1,2,3,4,5",4

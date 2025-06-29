@@ -45,8 +45,9 @@ function EditableCell({
   // Prioritize live error over committed error for better UX
   const displayError = liveError !== null ? liveError : error
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault() // Prevent new line in textarea
       onDataChange?.(rowIndex, columnId, value)
       e.currentTarget.blur() // Remove focus after confirming
     }
@@ -60,13 +61,25 @@ function EditableCell({
   }
 
   return (
-    <input
-      className={`p-2 border w-full rounded text-black ${displayError ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}
+    <textarea
+      className={`p-2 border w-full rounded text-black resize-none overflow-hidden min-h-[2.5rem] ${displayError ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}
       value={value}
-      onChange={(e) => setValue(e.target.value)}
+      onChange={(e) => {
+        setValue(e.target.value)
+        // Auto-resize textarea based on content
+        e.target.style.height = 'auto'
+        e.target.style.height = Math.max(40, e.target.scrollHeight) + 'px'
+      }}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
       title={displayError || "Press Enter to confirm changes"}
+      rows={1}
+      style={{
+        whiteSpace: 'pre-wrap',
+        wordWrap: 'break-word',
+        height: 'auto',
+        minHeight: '2.5rem'
+      }}
     />
   )
 }
@@ -114,12 +127,16 @@ export default function DataTable({
 
   return (
     <div className="overflow-auto max-h-[70vh] border border-gray-200 rounded-lg bg-white shadow-sm">
-      <table className="min-w-full">
-        <thead className="bg-gray-50">
+      <table className="min-w-full table-auto">
+        <thead className="bg-gray-50 sticky top-0 z-10">
           {table.getHeaderGroups().map((group) => (
             <tr key={group.id}>
               {group.headers.map((header) => (
-                <th key={header.id} className="border-b border-gray-200 px-4 py-3 text-left text-sm font-medium text-black">
+                <th
+                  key={header.id}
+                  className="border-b border-gray-200 px-4 py-3 text-left text-sm font-medium text-black whitespace-nowrap"
+                  style={{ minWidth: '150px', maxWidth: '300px' }}
+                >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </th>
               ))}
@@ -130,7 +147,16 @@ export default function DataTable({
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id} className="hover:bg-gray-50">
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-2">
+                <td
+                  key={cell.id}
+                  className="px-4 py-2 align-top"
+                  style={{
+                    minWidth: '150px',
+                    maxWidth: '300px',
+                    wordWrap: 'break-word',
+                    verticalAlign: 'top'
+                  }}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}

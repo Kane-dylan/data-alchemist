@@ -1,0 +1,6 @@
+ClientID,ClientName,GroupTag,RequestedTaskIDs,AttributesJSON
+C1,Acme Corp,GroupA,"T1,T2,T3","{""location"":""New York"",""budget"":150000}"
+C2,Globex Inc,GroupB,"T4,T5","{""location"":""London"",""budget"":75000}"
+C3,Wayne Enterprises,GroupA,"T6,T7,T8","{""location"":""Gotham"",""budget"":200000,""vip"":true}"
+C4,Stark Industries,GroupC,"T9,T10","{""location"":""Malibu"",""budget"":300000,""vip"":true}"
+C5,Springfield Nuclear,GroupB,"T11,T12","{""location"":""Springfield"",""budget"":50000}"

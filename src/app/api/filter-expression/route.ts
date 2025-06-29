@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// HEAD method for checking API availability
+export async function HEAD(req: NextRequest) {
+  return new NextResponse(null, { status: 200 })
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
