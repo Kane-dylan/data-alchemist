@@ -44,8 +44,6 @@ export default function EnhancedFilter({
 
   const quickFilters = {
     client: [
-      { label: 'High Priority (4-5)', query: 'priority level >= 4' },
-      { label: 'Priority Level 5', query: 'priority level equals 5' },
       { label: 'Contains "Corp"', query: 'client name contains Corp' },
       { label: 'Group A Clients', query: 'group tag equals GroupA' },
       { label: 'VIP Clients', query: 'vip client' },
@@ -195,8 +193,6 @@ export default function EnhancedFilter({
             try {
               // Create field mapping for natural language to actual field names
               const fieldMappings = {
-                'priority level': 'PriorityLevel',
-                'priority': 'PriorityLevel',
                 'client name': 'ClientName',
                 'name': entityType === 'client' ? 'ClientName' : entityType === 'worker' ? 'WorkerName' : 'TaskName',
                 'group tag': 'GroupTag',
@@ -322,7 +318,7 @@ export default function EnhancedFilter({
                 }
               }
 
-              // Handle simple comparisons like "priority > 3" or "duration = 2"
+              // Handle simple comparisons like "duration = 2"
               const comparisonMatch = searchTerm.match(/(\w+)\s*([><=]+)\s*(\w+)/i)
               if (comparisonMatch) {
                 const [, field, operator, value] = comparisonMatch
@@ -396,7 +392,7 @@ export default function EnhancedFilter({
         suggestions = 'Ensure your field names match the data structure.'
       } else if (errorMessage.includes('No filter expression generated')) {
         userFriendlyMessage = 'The AI could not understand your filter request'
-        suggestions = 'Try examples like: "priority > 3", "name contains Corp", "skills include coding"'
+        suggestions = 'Try examples like: "name contains Corp", "skills include coding"'
       }
 
       // Don't clear the UI on error - keep everything visible
@@ -636,8 +632,6 @@ export default function EnhancedFilter({
             try {
               // Create field mapping for natural language to actual field names
               const fieldMappings = {
-                'priority level': 'PriorityLevel',
-                'priority': 'PriorityLevel',
                 'client name': 'ClientName',
                 'name': entityType === 'client' ? 'ClientName' : entityType === 'worker' ? 'WorkerName' : 'TaskName',
                 'group tag': 'GroupTag',
@@ -673,7 +667,7 @@ export default function EnhancedFilter({
                 ) || null
               }
 
-              // Handle simple comparisons like "priority > 3" or "duration = 2"
+              // Handle simple comparisons like "duration = 2"
               const comparisonMatch = searchTerm.match(/(\w+)\s*([><=]+)\s*(\w+)/i)
               if (comparisonMatch) {
                 const [, field, operator, value] = comparisonMatch
@@ -747,7 +741,7 @@ export default function EnhancedFilter({
         suggestions = 'Ensure your field names match the data structure.'
       } else if (errorMessage.includes('No filter expression generated')) {
         userFriendlyMessage = 'The AI could not understand your filter request'
-        suggestions = 'Try examples like: "priority > 3", "name contains Corp", "skills include coding"'
+        suggestions = 'Try examples like: "name contains Corp", "skills include coding"'
       }
 
       // Don't clear the UI on error - keep everything visible
@@ -840,7 +834,6 @@ export default function EnhancedFilter({
                 <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
                   <p className="text-xs text-blue-800 font-medium">💡 Example queries that work well:</p>
                   <ul className="text-xs text-blue-700 mt-1 space-y-1">
-                    <li>• "priority level greater than 3"</li>
                     <li>• "client name contains Corp"</li>
                     <li>• "skills include coding"</li>
                     <li>• "group is GroupA"</li>
@@ -876,7 +869,7 @@ export default function EnhancedFilter({
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <Input
-                  placeholder="e.g., 'show high priority clients with active projects' or 'duration greater than 1'"
+                  placeholder="e.g., 'show clients with active projects' or 'duration greater than 1'"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !isProcessing && applyFilter()}
@@ -911,7 +904,6 @@ export default function EnhancedFilter({
             <div className="text-xs text-purple-700 bg-purple-50 p-3 rounded-lg border border-purple-200">
               <p className="font-medium">✨ AI Mode Examples:</p>
               <div className="mt-1 space-y-1">
-                <p>• <code>"priority level is 5"</code></p>
                 <p>• <code>"duration greater than 1"</code></p>
                 <p>• <code>"skills include coding"</code></p>
                 <p>• <code>"client name contains Corp"</code></p>
@@ -960,7 +952,7 @@ export default function EnhancedFilter({
               <p>🔍 Text mode: Simple text search across all data fields</p>
               <div className="mt-1 space-y-1">
                 <p>• Tasks: <code>"duration greater than 1" or "category equals ETL" or "preferred phases include 3"</code></p>
-                <p>• Clients: <code>"priority level is 5" or "client name contains Corp" or "group tag equals GroupA"</code></p>
+                <p>• Clients: <code>"client name contains Corp" or "group tag equals GroupA"</code></p>
                 <p>• Workers: <code>"qualification level greater than 5" or "skills include coding" or "worker group equals GroupB"</code></p>
               </div>
             </div>
@@ -1087,7 +1079,6 @@ export default function EnhancedFilter({
                           {client.ClientName || client.Name || `Client ${index + 1}`}
                         </div>
                         <div className="text-xs text-gray-600 grid grid-cols-2 gap-2">
-                          {client.PriorityLevel && <span>Priority: {client.PriorityLevel}</span>}
                           {client.GroupTag && <span>Group: {client.GroupTag}</span>}
                           {client.ClientType && <span>Type: {client.ClientType}</span>}
                           {client.Status && <span>Status: {client.Status}</span>}
@@ -1148,7 +1139,6 @@ export default function EnhancedFilter({
                           {task.Duration && <span>Duration: {task.Duration}</span>}
                           {task.Category && <span>Category: {task.Category}</span>}
                           {task.PreferredPhases && <span>Phases: {task.PreferredPhases}</span>}
-                          {task.Priority && <span>Priority: {task.Priority}</span>}
                         </div>
                       </div>
                     ))}

@@ -128,7 +128,6 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
     type: '',
     condition: '',
     action: '',
-    priority: 'medium',
     description: '',
     taskIds: [] as string[],
     clientGroup: '',
@@ -293,15 +292,6 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
         }
         break
 
-      case 'precedence':
-        ruleData = {
-          ...ruleData,
-          ruleName: manualRule.ruleName,
-          priority: manualRule.priority,
-          condition: manualRule.action
-        }
-        break
-
       default:
         toast.error('Invalid rule type')
         return
@@ -316,13 +306,12 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
     }
 
     setRules(prev => [...prev, newRule])
-    
+
     // Reset form
     setManualRule({
       type: '',
       condition: '',
       action: '',
-      priority: 'medium',
       description: '',
       taskIds: [],
       clientGroup: '',
@@ -336,7 +325,7 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
       ruleName: '',
       minCommonSlots: 1
     })
-    
+
     toast.success('Manual rule added successfully!')
   }
 
@@ -527,9 +516,6 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
                         <TabsTrigger value="pattern-match" className="data-[state=active]:bg-white data-[state=active]:text-black text-xs p-2">
                           Pattern
                         </TabsTrigger>
-                        <TabsTrigger value="precedence" className="data-[state=active]:bg-white data-[state=active]:text-black text-xs p-2">
-                          Priority
-                        </TabsTrigger>
                       </TabsList>
 
                       {/* Co-Run Rules */}
@@ -588,8 +574,8 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
                                 <label className="text-sm font-medium text-black">Client Group *</label>
-                                <Select 
-                                  value={manualRule.clientGroup} 
+                                <Select
+                                  value={manualRule.clientGroup}
                                   onValueChange={(value) => setManualRule(prev => ({ ...prev, clientGroup: value, type: 'slotRestriction' }))}
                                 >
                                   <SelectTrigger className="bg-white border-gray-300">
@@ -606,8 +592,8 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
 
                               <div className="space-y-2">
                                 <label className="text-sm font-medium text-black">Worker Group *</label>
-                                <Select 
-                                  value={manualRule.workerGroup} 
+                                <Select
+                                  value={manualRule.workerGroup}
                                   onValueChange={(value) => setManualRule(prev => ({ ...prev, workerGroup: value }))}
                                 >
                                   <SelectTrigger className="bg-white border-gray-300">
@@ -647,8 +633,8 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
                           <div className="space-y-4">
                             <div className="space-y-2">
                               <label className="text-sm font-medium text-black">Worker Group *</label>
-                              <Select 
-                                value={manualRule.condition} 
+                              <Select
+                                value={manualRule.condition}
                                 onValueChange={(value) => setManualRule(prev => ({ ...prev, condition: value, type: 'loadLimit' }))}
                               >
                                 <SelectTrigger className="bg-white border-gray-300">
@@ -754,8 +740,8 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
                           <div className="space-y-4">
                             <div className="space-y-2">
                               <label className="text-sm font-medium text-black">Field to Match *</label>
-                              <Select 
-                                value={manualRule.field} 
+                              <Select
+                                value={manualRule.field}
                                 onValueChange={(value) => setManualRule(prev => ({ ...prev, field: value, type: 'patternMatch' }))}
                               >
                                 <SelectTrigger className="bg-white border-gray-300">
@@ -784,79 +770,19 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
 
                             <div className="space-y-2">
                               <label className="text-sm font-medium text-black">Rule Template *</label>
-                              <Select 
-                                value={manualRule.template} 
+                              <Select
+                                value={manualRule.template}
                                 onValueChange={(value) => setManualRule(prev => ({ ...prev, template: value }))}
                               >
                                 <SelectTrigger className="bg-white border-gray-300">
                                   <SelectValue placeholder="Select template" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="high-priority">Set High Priority</SelectItem>
                                   <SelectItem value="specific-worker">Assign Specific Worker</SelectItem>
                                   <SelectItem value="exclude">Exclude from Processing</SelectItem>
                                   <SelectItem value="group-together">Group Together</SelectItem>
                                 </SelectContent>
                               </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-black">Description</label>
-                              <Input
-                                placeholder="Optional description"
-                                value={manualRule.description}
-                                onChange={(e) => setManualRule(prev => ({ ...prev, description: e.target.value }))}
-                                className="bg-white border-gray-300"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      {/* Precedence Rules */}
-                      <TabsContent value="precedence" className="space-y-4 mt-4">
-                        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                          <h4 className="font-medium text-black mb-3">Precedence Override Rule</h4>
-                          <p className="text-sm text-gray-600 mb-4">Define rule priority ordering</p>
-
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-black">Rule Name *</label>
-                              <Input
-                                placeholder="e.g., VIP Client Override"
-                                value={manualRule.ruleName}
-                                onChange={(e) => setManualRule(prev => ({ ...prev, ruleName: e.target.value, type: 'precedence' }))}
-                                className="bg-white border-gray-300"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-black">Priority Level *</label>
-                              <Select 
-                                value={manualRule.priority} 
-                                onValueChange={(value) => setManualRule(prev => ({ ...prev, priority: value }))}
-                              >
-                                <SelectTrigger className="bg-white border-gray-300">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="critical">Critical (1)</SelectItem>
-                                  <SelectItem value="high">High (2)</SelectItem>
-                                  <SelectItem value="medium">Medium (3)</SelectItem>
-                                  <SelectItem value="low">Low (4)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-black">Override Condition *</label>
-                              <Input
-                                placeholder="e.g., ClientTag == 'VIP'"
-                                value={manualRule.action}
-                                onChange={(e) => setManualRule(prev => ({ ...prev, action: e.target.value }))}
-                                className="bg-white border-gray-300"
-                              />
-                              <p className="text-xs text-gray-500">Condition when this rule takes precedence</p>
                             </div>
 
                             <div className="space-y-2">
@@ -898,7 +824,6 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
                           {manualRule.field && <p><strong>Field:</strong> {manualRule.field}</p>}
                           {manualRule.pattern && <p><strong>Pattern:</strong> {manualRule.pattern}</p>}
                           {manualRule.ruleName && <p><strong>Rule Name:</strong> {manualRule.ruleName}</p>}
-                          <p><strong>Priority:</strong> {manualRule.priority}</p>
                           {manualRule.description && <p><strong>Description:</strong> {manualRule.description}</p>}
                         </div>
                       </div>
@@ -925,7 +850,7 @@ export default function ModularRuleManager({ rules, setRules }: ModularRuleManag
                       </div>
                     ))}
                   </div>
-                  
+
                   {/* Quick Stats */}
                   <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
                     <div className="flex justify-between items-center text-xs text-blue-800">

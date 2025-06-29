@@ -9,7 +9,7 @@ import ModernFileUpload from '@/components/ModernFileUpload'
 import TabbedDataView from '@/components/TabbedDataView'
 import ModularRuleManager from '@/components/ModularRuleManager'
 import EnhancedFilter from '@/components/EnhancedFilter'
-import EnhancedPrioritySlider from '@/components/EnhancedPrioritySlider'
+
 import AIAssistant from '@/components/AIAssistant'
 import InlineStatsPanel from '@/components/InlineStatsPanel'
 import { Button } from '@/components/ui/button'
@@ -19,13 +19,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 // Utils
 import { runValidations, ValidationResult } from '@/utils/validationEngine'
 import { DataStorage } from '@/utils/dataStorage'
-import { 
-  exportDataPackage, 
-  exportClientsCSV, 
-  exportWorkersCSV, 
-  exportTasksCSV, 
-  exportRulesJSON, 
-  exportExcelFile 
+import {
+  exportDataPackage,
+  exportClientsCSV,
+  exportWorkersCSV,
+  exportTasksCSV,
+  exportRulesJSON,
+  exportExcelFile
 } from '@/utils/exportUtility'
 import { toast } from 'sonner'
 
@@ -37,12 +37,7 @@ interface Rule {
   confidence?: number
 }
 
-interface PriorityConfiguration {
-  weights: Record<string, number>
-  ranking: string[]
-  pairwiseMatrix: Record<string, Record<string, number>>
-  presetProfile: string
-}
+
 
 export default function Home() {
   // Core data state
@@ -61,14 +56,8 @@ export default function Home() {
   const [originalWorkers, setOriginalWorkers] = useState<any[]>([])
   const [originalTasks, setOriginalTasks] = useState<any[]>([])
 
-  // Rules and priorities
+  // Rules
   const [rules, setRules] = useState<Rule[]>([])
-  const [priorityConfig, setPriorityConfig] = useState<PriorityConfiguration>({
-    weights: {},
-    ranking: [],
-    pairwiseMatrix: {},
-    presetProfile: ''
-  })
 
   // Uploaded files metadata
   const [uploadedFiles, setUploadedFiles] = useState<{
@@ -86,10 +75,6 @@ export default function Home() {
       setOriginalClients(storedData.clients || [])
       setOriginalWorkers(storedData.workers || [])
       setOriginalTasks(storedData.tasks || [])
-
-      if (storedData.priorityConfig) {
-        setPriorityConfig(storedData.priorityConfig)
-      }
 
       if (storedData.uploadedFiles) {
         // Handle backward compatibility for files without rowCount
@@ -141,12 +126,11 @@ export default function Home() {
         workers,
         tasks,
         lastUpload: new Date().toISOString(),
-        priorityConfig,
         uploadedFiles,
         rules
       })
     }
-  }, [clients, workers, tasks, priorityConfig, uploadedFiles, rules])
+  }, [clients, workers, tasks, uploadedFiles, rules])
 
   const updateValidationState = (uploadEntityType: 'client' | 'worker' | 'task', dataToValidate: any[]) => {
     const results = runValidations(uploadEntityType, dataToValidate)
@@ -312,9 +296,7 @@ export default function Home() {
     }
   }
 
-  const handlePriorityConfigChange = useCallback((config: PriorityConfiguration) => {
-    setPriorityConfig(config)
-  }, [])
+
 
   const handleExport = useCallback(async () => {
     try {
@@ -322,7 +304,6 @@ export default function Home() {
         clients,
         workers,
         tasks,
-        priorityConfig,
         rules
       })
       toast.success('ZIP package exported successfully!')
@@ -331,7 +312,7 @@ export default function Home() {
         description: 'There was an error preparing your export package.'
       })
     }
-  }, [clients, workers, tasks, priorityConfig, rules])
+  }, [clients, workers, tasks, rules])
 
   const handleExportClients = useCallback(() => {
     try {
@@ -378,12 +359,12 @@ export default function Home() {
         toast.error('No rules to export')
         return
       }
-      exportRulesJSON(rules, priorityConfig)
+      exportRulesJSON(rules)
       toast.success('Rules JSON exported successfully!')
     } catch (error) {
       toast.error('Failed to export rules JSON')
     }
-  }, [rules, priorityConfig])
+  }, [rules])
 
   const handleExportExcel = useCallback(() => {
     try {
@@ -391,14 +372,13 @@ export default function Home() {
         clients,
         workers,
         tasks,
-        priorityConfig,
         rules
       })
       toast.success('Excel file exported successfully!')
     } catch (error) {
       toast.error('Failed to export Excel file')
     }
-  }, [clients, workers, tasks, priorityConfig, rules])
+  }, [clients, workers, tasks, rules])
 
   const handleTabChange = (entityType: 'client' | 'worker' | 'task') => {
     setEntityType(entityType)
@@ -494,7 +474,7 @@ export default function Home() {
               </div>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button 
+                  <Button
                     className="bg-gray-900 text-white hover:bg-gray-800 transition-colors"
                     disabled={clients.length + workers.length + tasks.length === 0}
                   >
@@ -505,7 +485,7 @@ export default function Home() {
                 <PopoverContent className="w-64 p-2" align="end">
                   <div className="space-y-2">
                     <div className="text-sm font-medium px-3 py-2 text-gray-700">Individual Files</div>
-                    
+
                     <Button
                       onClick={handleExportClients}
                       disabled={clients.length === 0}
@@ -666,19 +646,6 @@ export default function Home() {
               <ModularRuleManager
                 rules={rules}
                 setRules={setRules}
-              />
-            </motion.div>
-
-            {/* Priority Configuration */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <EnhancedPrioritySlider
-                onChange={handlePriorityConfigChange}
-                onExport={handleExport}
-                hasData={hasData}
               />
             </motion.div>
           </div>

@@ -27,14 +27,6 @@ export function validateClients(clients: DataRow[]): ValidationResult[] {
       seenIds.add(row.ClientID)
     }
 
-    // Priority range (must be integer 1-5)
-    const priority = Number(row.PriorityLevel)
-    if (row.PriorityLevel !== undefined && row.PriorityLevel !== null && row.PriorityLevel !== '') {
-      if (isNaN(priority) || priority < 1 || priority > 5 || !Number.isInteger(priority)) {
-        errors.push({ rowIndex: i, column: 'PriorityLevel', message: 'PriorityLevel must be integer 1–5' })
-      }
-    }
-
     // JSON validation for AttributesJSON
     if (row.AttributesJSON) {
       try {

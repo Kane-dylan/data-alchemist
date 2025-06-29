@@ -45,14 +45,6 @@ export function validateClients(data: any[]) {
         }
       }
       
-      // Priority Level validation (if it exists)
-      else if (key.toLowerCase().includes('priority')) {
-        const priority = parseInt(value)
-        if (isNaN(priority) || priority < 1 || priority > 5) {
-          rowErrors[key] = 'Priority must be 1-5'
-        }
-      }
-      
       // ClientID validation (if it exists)
       else if (key.toLowerCase().includes('id')) {
         // Check for duplicate IDs

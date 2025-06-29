@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     if (!query?.trim()) {
       return NextResponse.json({ 
         error: 'Empty query', 
-        details: 'Please provide a meaningful filter query. Examples: "priority > 3", "contains Corp", "skills include coding"'
+        details: 'Please provide a meaningful filter query. Examples: "contains Corp", "skills include coding"'
       }, { status: 400 })
     }
 
@@ -38,11 +38,10 @@ ${
     ? `CLIENT FIELDS WITH REAL EXAMPLES:
     - ClientID: String format "C{number}" (e.g., "C1", "C2", "C25", "C49")
     - ClientName: String company names (e.g., "Acme Corp", "Globex Inc", "Stark Industries", "Wayne Enterprises", "Los Pollos Hermanos", "Springfield Nuclear")
-    - PriorityLevel: Number 1-5 (e.g., 1, 2, 3, 4, 5 where 5=highest priority)
     - RequestedTaskIDs: String of comma-separated task IDs (e.g., "T17,T27,T33,T31,T20,T3,T32,T26", "T35,T39,T10,T17,T46", "T20,TX,T9,T8,T29")
     - GroupTag: String enum exactly "GroupA", "GroupB", or "GroupC" (case-sensitive)
     - AttributesJSON: Mixed format - either JSON string or plain text:
-        * JSON: '{"location":"New York","budget":100000}', '{"sla":"24h","vip":true}', '{"location":"London","priority":"high"}'
+        * JSON: '{"location":"New York","budget":100000}', '{"sla":"24h","vip":true}', '{"location":"London"}'
         * Plain text: "ensure deliverables align with project scope", "budget approved pending CFO review", "client prefers morning meetings"`
     : entityType === 'worker'
     ? `WORKER FIELDS WITH REAL EXAMPLES:
@@ -71,11 +70,6 @@ USER QUERY: "${query}"
 COMPREHENSIVE NATURAL LANGUAGE PATTERN RECOGNITION WITH REAL DATA EXAMPLES:
 
 1. NUMERIC COMPARISONS WITH VARIATIONS:
-   - "priority > 3" → row.PriorityLevel > 3
-   - "priority level greater than 3" → row.PriorityLevel > 3  
-   - "priority above 3" → row.PriorityLevel > 3
-   - "high priority" / "priority high" → row.PriorityLevel >= 4
-   - "low priority" / "priority low" → row.PriorityLevel <= 2
    - "duration equals 2" → row.Duration === 2
    - "duration is 2" → row.Duration === 2
    - "duration = 2" → row.Duration === 2
@@ -131,7 +125,6 @@ COMPREHENSIVE NATURAL LANGUAGE PATTERN RECOGNITION WITH REAL DATA EXAMPLES:
    - "vip is true" → (function(){try{const attr=JSON.parse(row.AttributesJSON||'{}');return attr.vip===true}catch(e){return row.AttributesJSON&&row.AttributesJSON.includes('vip":true')}})()
    - "vip client" → (function(){try{const attr=JSON.parse(row.AttributesJSON||'{}');return attr.vip===true}catch(e){return row.AttributesJSON&&row.AttributesJSON.toLowerCase().includes('vip')}})()
    - "sla 24h" → (function(){try{const attr=JSON.parse(row.AttributesJSON||'{}');return attr.sla&&attr.sla.includes('24h')}catch(e){return row.AttributesJSON&&row.AttributesJSON.includes('24h')}})()
-   - "priority high" → (function(){try{const attr=JSON.parse(row.AttributesJSON||'{}');return attr.priority&&attr.priority.toLowerCase().includes('high')}catch(e){return row.AttributesJSON&&row.AttributesJSON.toLowerCase().includes('priority')&&row.AttributesJSON.toLowerCase().includes('high')}})()
 
 8. EXISTENCE AND CONTENT CHECKS:
    - "has location" → (function(){try{const attr=JSON.parse(row.AttributesJSON||'{}');return !!attr.location}catch(e){return row.AttributesJSON&&row.AttributesJSON.includes('location')}})()
@@ -149,7 +142,6 @@ COMPREHENSIVE NATURAL LANGUAGE PATTERN RECOGNITION WITH REAL DATA EXAMPLES:
    - "worker ID greater than W30" → row.WorkerID && parseInt(row.WorkerID.substring(1)) > 30
 
 10. BOOLEAN COMBINATIONS:
-   - "priority 5 and vip" → row.PriorityLevel === 5 && (function(){try{const attr=JSON.parse(row.AttributesJSON||'{}');return attr.vip===true}catch(e){return row.AttributesJSON&&row.AttributesJSON.toLowerCase().includes('vip')}})()
    - "GroupA or GroupB" → row.GroupTag === 'GroupA' || row.GroupTag === 'GroupB' || row.WorkerGroup === 'GroupA' || row.WorkerGroup === 'GroupB'
    - "coding and ml skills" → (row.Skills && row.Skills.toLowerCase().includes('coding') && row.Skills.toLowerCase().includes('ml')) || (row.RequiredSkills && row.RequiredSkills.toLowerCase().includes('coding') && row.RequiredSkills.toLowerCase().includes('ml'))
 

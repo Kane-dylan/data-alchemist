@@ -20,7 +20,7 @@ Use this exact format:
 Expected schema for "${entityType}":
 ${
   entityType === 'client'
-    ? 'ClientID, ClientName, PriorityLevel, RequestedTaskIDs, GroupTag, AttributesJSON'
+    ? 'ClientID, ClientName, RequestedTaskIDs, GroupTag, AttributesJSON'
     : entityType === 'worker'
     ? 'WorkerID, WorkerName, Skills, AvailableSlots, MaxLoadPerPhase, WorkerGroup, QualificationLevel'
     : 'TaskID, TaskName, Category, Duration, RequiredSkills, PreferredPhases, MaxConcurrent'
@@ -29,7 +29,6 @@ ${
 Examples of mapping:
 - "client_id" → "ClientID"
 - "client name" → "ClientName"  
-- "priority" → "PriorityLevel"
 - "worker_name" → "WorkerName"
 - "skills" → "Skills"
 

@@ -4,7 +4,6 @@ export interface StoredData {
   workers: any[]
   tasks: any[]
   lastUpload: string
-  priorityConfig?: any
   uploadedFiles?: {
     clients?: { name: string; uploadDate: string; rowCount: number }
     workers?: { name: string; uploadDate: string; rowCount: number }

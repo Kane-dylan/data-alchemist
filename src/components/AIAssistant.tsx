@@ -33,8 +33,8 @@ export default function AIAssistant({ onApplySuggestion }: AIAssistantProps) {
     {
       id: '2',
       type: 'filter',
-      title: 'Filter high-priority clients',
-      description: 'Show only clients with priority level above 7',
+      title: 'Filter active clients',
+      description: 'Show only clients with active status',
       confidence: 85
     },
     {

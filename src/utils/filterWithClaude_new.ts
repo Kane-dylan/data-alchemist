@@ -14,7 +14,6 @@ Return a pure JavaScript boolean expression to be used inside an array filter() 
 
 Examples:
 - "duration > 1" → "row.Duration > 1"
-- "priority is 5" → "row.PriorityLevel === 5"
 - "preferred phases include 2" → "row.PreferredPhases.includes(2)"
 
 Only return the expression. Do not include function or explanation.

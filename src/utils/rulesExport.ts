@@ -95,7 +95,6 @@ export const validateRuleStructure = (rule: Rule): { isValid: boolean; errors: s
     
     case 'precedence':
       if (!rule.data.ruleName) errors.push('Precedence rules must specify ruleName')
-      if (!rule.data.priority) errors.push('Precedence rules must specify priority')
       break
   }
   

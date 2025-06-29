@@ -6,7 +6,6 @@ interface ExportData {
   clients: any[]
   workers: any[]
   tasks: any[]
-  priorityConfig: any
   rules: any[]
 }
 
@@ -33,7 +32,6 @@ export const exportDataPackage = async (data: ExportData): Promise<void> => {
     // Create rules.json with configuration
     const rulesConfig = {
       exportDate: new Date().toISOString(),
-      priorityConfiguration: data.priorityConfig,
       rules: data.rules,
       metadata: {
         clientsCount: data.clients.length,
@@ -105,10 +103,9 @@ export const exportTasksCSV = (tasks: any[]): void => {
   saveAs(blob, `tasks-${timestamp}.csv`)
 }
 
-export const exportRulesJSON = (rules: any[], priorityConfig: any): void => {
+export const exportRulesJSON = (rules: any[]): void => {
   const rulesConfig = {
     exportDate: new Date().toISOString(),
-    priorityConfiguration: priorityConfig,
     rules: rules,
     metadata: {
       rulesCount: rules.length
