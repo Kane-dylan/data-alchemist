@@ -81,7 +81,11 @@ export default function TextFilter({
         if (searchTerm.includes('>') || searchTerm.includes('<') || searchTerm.includes('=') ||
           searchTerm.includes('greater') || searchTerm.includes('less') ||
           searchTerm.includes('equals') || searchTerm.includes('contains') ||
-          searchTerm.includes('include') || searchTerm.includes(' is ') || searchTerm.includes(' to ')) {
+          searchTerm.includes('include') || searchTerm.includes(' is ') || searchTerm.includes(' to ') ||
+          searchTerm.includes('in phase') || searchTerm.includes('phase ') ||
+          (searchTerm.includes('tasks') && (searchTerm.includes('longer') || searchTerm.includes('last'))) ||
+          searchTerm.includes('concurrency') || searchTerm.includes('concurrent') ||
+          searchTerm.includes('more')) {
           try {
             // Create field mapping for natural language to actual field names
             const fieldMappings = {
@@ -103,7 +107,10 @@ export default function TextFilter({
               'preferred phases': 'PreferredPhases',
               'phases': 'PreferredPhases',
               'available slots': 'AvailableSlots',
-              'slots': 'AvailableSlots'
+              'slots': 'AvailableSlots',
+              'max concurrent': 'MaxConcurrent',
+              'concurrency': 'MaxConcurrent',
+              'concurrent': 'MaxConcurrent'
             }
 
             // Helper function to find matching field
@@ -122,17 +129,29 @@ export default function TextFilter({
               ) || null
             }
 
-            // Handle "field greater than X", "field > X", etc.
-            const greaterThanMatch = searchTerm.match(/(.+?)\s+(?:greater\s+than|>)\s*(\d+)/i)
+            // Handle "field greater than X", "field more than X", "field > X", etc.
+            const greaterThanMatch = searchTerm.match(/(.+?)\s+(?:greater\s+than|more\s+than|>\s*|≥\s*)\s*(\d+)/i)
             if (greaterThanMatch) {
               const [, field, value] = greaterThanMatch
-              const matchingField = findMatchingField(field.trim())
+              
+              // Extract just the field name from phrases like "tasks with duration"
+              let cleanField = field.trim()
+              if (cleanField.includes('tasks with ')) {
+                cleanField = cleanField.replace(/^.*tasks with\s+/, '')
+              }
+              if (cleanField.includes('task ')) {
+                cleanField = cleanField.replace(/^.*task\s+/, '')
+              }
+              
+              const matchingField = findMatchingField(cleanField)
 
               if (matchingField && item[matchingField] != null) {
                 const fieldValue = parseFloat(item[matchingField])
                 const compareValue = parseFloat(value)
                 if (!isNaN(fieldValue) && !isNaN(compareValue)) {
-                  return fieldValue > compareValue
+                  // Handle ≥ (greater than or equal) vs > (greater than)
+                  const isGreaterOrEqual = searchTerm.includes('≥')
+                  return isGreaterOrEqual ? fieldValue >= compareValue : fieldValue > compareValue
                 }
               }
             }
@@ -147,6 +166,109 @@ export default function TextFilter({
                 const fieldValue = String(item[matchingField]).toLowerCase()
                 const compareValue = value.trim().toLowerCase()
                 return fieldValue === compareValue
+              }
+            }
+
+            // Helper function to check if a task can run in a specific phase
+            const canRunInPhase = (preferredPhases: any, targetPhase: number): boolean => {
+              if (!preferredPhases) return false
+              const fieldValue = String(preferredPhases)
+              
+              // Format 1: "1-2" or "3-5" range format
+              if (fieldValue.includes('-') && !fieldValue.startsWith('[')) {
+                const [rangeStart, rangeEnd] = fieldValue.split('-').map(x => parseInt(x.trim()))
+                if (!isNaN(rangeStart) && !isNaN(rangeEnd)) {
+                  return targetPhase >= rangeStart && targetPhase <= rangeEnd
+                }
+              }
+              
+              // Format 2: "[2,3,4]" JSON array
+              if (fieldValue.startsWith('[') && fieldValue.endsWith(']')) {
+                try {
+                  const phases = JSON.parse(fieldValue)
+                  if (Array.isArray(phases)) {
+                    return phases.includes(targetPhase)
+                  }
+                } catch (e) {
+                  // Handle malformed JSON like "[2-4]"
+                  const numbersInBrackets = fieldValue.match(/\[([^\]]+)\]/)?.[1]
+                  if (numbersInBrackets) {
+                    if (numbersInBrackets.includes('-')) {
+                      const [start, end] = numbersInBrackets.split('-').map(x => parseInt(x.trim()))
+                      if (!isNaN(start) && !isNaN(end)) {
+                        return targetPhase >= start && targetPhase <= end
+                      }
+                    } else {
+                      const nums = numbersInBrackets.split(',').map(x => parseInt(x.trim()))
+                      return nums.includes(targetPhase)
+                    }
+                  }
+                }
+              }
+              
+              // Format 3: Simple number "2"
+              if (/^\d+$/.test(fieldValue.trim())) {
+                return parseInt(fieldValue.trim()) === targetPhase
+              }
+              
+              return false
+            }
+
+            // Handle "tasks that last X phase and run in phase Y" first (most specific)
+            const complexDurationPhaseMatch = searchTerm.match(/tasks?\s+that\s+last\s+(\d+)\s+phase\s+and\s+run\s+in\s+phase\s+(\d+)/i)
+            if (complexDurationPhaseMatch) {
+              const [, duration, phase] = complexDurationPhaseMatch
+              const durationValue = parseInt(duration)
+              const phaseValue = parseInt(phase)
+              
+              // Check duration
+              const durationMatches = item.Duration && parseInt(item.Duration) === durationValue
+              
+              // Check phase
+              const phaseMatches = canRunInPhase(item.PreferredPhases, phaseValue)
+              
+              return durationMatches && phaseMatches
+            }
+
+            // Handle "tasks in phase X", "in phase X", "phase X"
+            const phaseMatch = searchTerm.match(/(?:tasks?\s+)?in\s+phase\s+(\d+)|(?:^|\s)phase\s+(\d+)/i)
+            if (phaseMatch) {
+              const phaseNumber = parseInt(phaseMatch[1] || phaseMatch[2])
+              
+              if (!isNaN(phaseNumber)) {
+                return canRunInPhase(item.PreferredPhases, phaseNumber)
+              }
+            }
+
+            // Handle complex AND conditions like "Design tasks longer than 1 phase"
+            const complexAndMatch = searchTerm.match(/(\w+)\s+tasks?\s+(?:longer\s+than|more\s+than|greater\s+than)\s+(\d+)\s+(?:phase|duration)/i)
+            if (complexAndMatch) {
+              const [, category, value] = complexAndMatch
+              const categoryField = 'Category'
+              const durationField = 'Duration'
+              
+              if (item[categoryField] && item[durationField]) {
+                const categoryMatches = String(item[categoryField]).toLowerCase() === category.toLowerCase()
+                const durationValue = parseFloat(item[durationField])
+                const compareValue = parseFloat(value)
+                
+                if (!isNaN(durationValue) && !isNaN(compareValue)) {
+                  return categoryMatches && durationValue > compareValue
+                }
+              }
+            }
+
+            // Handle "show tasks with concurrency ≥ X" or "concurrency >= X"
+            const concurrencyMatch = searchTerm.match(/(?:show\s+tasks?\s+with\s+)?concurrenc(?:y|ies?)\s*[≥>=]+\s*(\d+)/i)
+            if (concurrencyMatch) {
+              const value = parseInt(concurrencyMatch[1])
+              const concurrencyField = 'MaxConcurrent'
+              
+              if (item[concurrencyField] && !isNaN(value)) {
+                const fieldValue = parseFloat(item[concurrencyField])
+                if (!isNaN(fieldValue)) {
+                  return fieldValue >= value
+                }
               }
             }
 
@@ -212,8 +334,8 @@ export default function TextFilter({
               }
             }
 
-            // Handle simple comparisons like "priority > 3" or "duration = 2"
-            const comparisonMatch = searchTerm.match(/(\w+)\s*([><=]+)\s*(\w+)/i)
+            // Handle simple comparisons like "priority > 3", "duration = 2", "concurrency ≥ 2"
+            const comparisonMatch = searchTerm.match(/(\w+)\s*([><=≥≤]+|>=|<=)\s*(\w+)/i)
             if (comparisonMatch) {
               const [, field, operator, value] = comparisonMatch
               const matchingField = findMatchingField(field)
@@ -225,8 +347,10 @@ export default function TextFilter({
                 switch (operator) {
                   case '>': return fieldValue > compareValue
                   case '<': return fieldValue < compareValue
-                  case '>=': return fieldValue >= compareValue
-                  case '<=': return fieldValue <= compareValue
+                  case '>=':
+                  case '≥': return fieldValue >= compareValue
+                  case '<=':
+                  case '≤': return fieldValue <= compareValue
                   case '=':
                   case '==':
                   case '===': return fieldValue == compareValue
@@ -326,11 +450,11 @@ export default function TextFilter({
 
       {/* Text Mode Info */}
       <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
-        <p>🔍 Text mode: Simple text search across all data fields</p>
+        <p>🔍 Text mode: Enhanced natural language search with complex pattern matching</p>
         <div className="mt-1 space-y-1">
-          <p>• Tasks: <code>"duration greater than 1" or "category equals ETL" or "preferred phases include 3"</code></p>
-          <p>• Clients: <code>"priority level is 5" or "client name contains Corp" or "group tag equals GroupA"</code></p>
-          <p>• Workers: <code>"qualification level greater than 5" or "skills include coding" or "worker group equals GroupB"</code></p>
+          <p>• Tasks: <code>"duration more than 1"</code>, <code>"tasks in phase 2"</code>, <code>"Design tasks longer than 1 phase"</code>, <code>"concurrency ≥ 2"</code></p>
+          <p>• Clients: <code>"priority level is 5"</code>, <code>"client name contains Corp"</code>, <code>"group tag equals GroupA"</code></p>
+          <p>• Workers: <code>"qualification level greater than 5"</code>, <code>"skills include coding"</code>, <code>"worker group equals GroupB"</code></p>
         </div>
       </div>
     </div>

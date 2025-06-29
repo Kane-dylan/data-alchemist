@@ -12,6 +12,7 @@ import ManageFilters from '@/components/ManageFilters'
 import EnhancedPrioritySlider from '@/components/EnhancedPrioritySlider'
 import AIAssistant from '@/components/AIAssistant'
 import InlineStatsPanel from '@/components/InlineStatsPanel'
+import LoadDemoData from '@/components/LoadDemoData'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -600,6 +601,12 @@ export default function Home() {
               transition={{ delay: 0.1 }}
             >
               <ModernFileUpload onData={handleDataUpload} />
+              
+              {/* Demo Data Loader */}
+              <div className="mt-4 text-center">
+                <LoadDemoData onDataLoaded={(data, entityType) => handleDataUpload(data, entityType, 'tasks_demo.csv')} />
+                <p className="text-xs text-gray-500 mt-1">Quick load demo tasks for testing</p>
+              </div>
             </motion.div>
 
             {/* Data Table with Filter */}
