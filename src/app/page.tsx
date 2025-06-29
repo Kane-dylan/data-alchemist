@@ -8,7 +8,7 @@ import { Database, ChevronDown } from 'lucide-react'
 import ModernFileUpload from '@/components/ModernFileUpload'
 import TabbedDataView from '@/components/TabbedDataView'
 import ModularRuleManager from '@/components/ModularRuleManager'
-import EnhancedFilter from '@/components/EnhancedFilter'
+import ManageFilters from '@/components/ManageFilters'
 import EnhancedPrioritySlider from '@/components/EnhancedPrioritySlider'
 import AIAssistant from '@/components/AIAssistant'
 import InlineStatsPanel from '@/components/InlineStatsPanel'
@@ -19,13 +19,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 // Utils
 import { runValidations, ValidationResult } from '@/utils/validationEngine'
 import { DataStorage } from '@/utils/dataStorage'
-import { 
-  exportDataPackage, 
-  exportClientsCSV, 
-  exportWorkersCSV, 
-  exportTasksCSV, 
-  exportRulesJSON, 
-  exportExcelFile 
+import {
+  exportDataPackage,
+  exportClientsCSV,
+  exportWorkersCSV,
+  exportTasksCSV,
+  exportRulesJSON,
+  exportExcelFile
 } from '@/utils/exportUtility'
 import { toast } from 'sonner'
 
@@ -494,7 +494,7 @@ export default function Home() {
               </div>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button 
+                  <Button
                     className="bg-gray-900 text-white hover:bg-gray-800 transition-colors"
                     disabled={clients.length + workers.length + tasks.length === 0}
                   >
@@ -505,7 +505,7 @@ export default function Home() {
                 <PopoverContent className="w-64 p-2" align="end">
                   <div className="space-y-2">
                     <div className="text-sm font-medium px-3 py-2 text-gray-700">Individual Files</div>
-                    
+
                     <Button
                       onClick={handleExportClients}
                       disabled={clients.length === 0}
@@ -610,7 +610,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <EnhancedFilter
+                  <ManageFilters
                     data={data}
                     entityType={entityType}
                     onFilteredData={handleFilteredData}
