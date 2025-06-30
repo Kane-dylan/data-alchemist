@@ -8,23 +8,23 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 interface InlineStatsProps {
-  clients: any[]
-  workers: any[]
-  tasks: any[]
-  validationResults: any[]
+  clients?: any[]
+  workers?: any[]
+  tasks?: any[]
+  validationResults?: any[]
 }
 
 export default function InlineStatsPanel({
-  clients,
-  workers,
-  tasks,
-  validationResults
+  clients = [],
+  workers = [],
+  tasks = [],
+  validationResults = []
 }: InlineStatsProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
   const calculateStats = () => {
-    const totalRecords = clients.length + workers.length + tasks.length
-    const errorCount = validationResults.length
+    const totalRecords = (clients?.length || 0) + (workers?.length || 0) + (tasks?.length || 0)
+    const errorCount = validationResults?.length || 0
     const completionRate = totalRecords > 0 ? ((totalRecords - errorCount) / totalRecords) * 100 : 0
 
     return {
@@ -49,21 +49,21 @@ export default function InlineStatsPanel({
   const datasetBreakdown = [
     {
       name: 'Clients',
-      count: clients.length,
+      count: clients?.length || 0,
       icon: '👥',
-      errors: validationResults.filter(v => v.entityType === 'client').length
+      errors: validationResults?.filter(v => v.entityType === 'client')?.length || 0
     },
     {
       name: 'Workers',
-      count: workers.length,
+      count: workers?.length || 0,
       icon: '👷',
-      errors: validationResults.filter(v => v.entityType === 'worker').length
+      errors: validationResults?.filter(v => v.entityType === 'worker')?.length || 0
     },
     {
       name: 'Tasks',
-      count: tasks.length,
+      count: tasks?.length || 0,
       icon: '📋',
-      errors: validationResults.filter(v => v.entityType === 'task').length
+      errors: validationResults?.filter(v => v.entityType === 'task')?.length || 0
     },
   ]
 

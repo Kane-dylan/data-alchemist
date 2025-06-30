@@ -80,12 +80,18 @@ export default function Home() {
   useEffect(() => {
     const storedData = DataStorage.load()
     if (storedData) {
-      setClients(storedData.clients || [])
-      setWorkers(storedData.workers || [])
-      setTasks(storedData.tasks || [])
-      setOriginalClients(storedData.clients || [])
-      setOriginalWorkers(storedData.workers || [])
-      setOriginalTasks(storedData.tasks || [])
+      // Ensure all data arrays are properly initialized
+      const clientsData = Array.isArray(storedData.clients) ? storedData.clients : []
+      const workersData = Array.isArray(storedData.workers) ? storedData.workers : []
+      const tasksData = Array.isArray(storedData.tasks) ? storedData.tasks : []
+      const rulesData = Array.isArray(storedData.rules) ? storedData.rules : []
+
+      setClients(clientsData)
+      setWorkers(workersData)
+      setTasks(tasksData)
+      setOriginalClients(clientsData)
+      setOriginalWorkers(workersData)
+      setOriginalTasks(tasksData)
 
       if (storedData.priorityConfig) {
         setPriorityConfig(storedData.priorityConfig)
@@ -96,40 +102,43 @@ export default function Home() {
         const compatibleFiles = {
           clients: storedData.uploadedFiles.clients ? {
             ...storedData.uploadedFiles.clients,
-            rowCount: storedData.uploadedFiles.clients.rowCount || storedData.clients.length
+            rowCount: storedData.uploadedFiles.clients.rowCount || clientsData.length
           } : undefined,
           workers: storedData.uploadedFiles.workers ? {
             ...storedData.uploadedFiles.workers,
-            rowCount: storedData.uploadedFiles.workers.rowCount || storedData.workers.length
+            rowCount: storedData.uploadedFiles.workers.rowCount || workersData.length
           } : undefined,
           tasks: storedData.uploadedFiles.tasks ? {
             ...storedData.uploadedFiles.tasks,
-            rowCount: storedData.uploadedFiles.tasks.rowCount || storedData.tasks.length
+            rowCount: storedData.uploadedFiles.tasks.rowCount || tasksData.length
           } : undefined,
         }
         setUploadedFiles(compatibleFiles)
       }
 
-      if (storedData.rules) {
-        setRules(storedData.rules)
+      if (rulesData.length > 0) {
+        setRules(rulesData)
       }
 
       // Set initial data based on what's available
-      if (storedData.clients.length > 0) {
-        setData(storedData.clients)
+      if (clientsData.length > 0) {
+        setData(clientsData)
         setEntityType('client')
-      } else if (storedData.workers.length > 0) {
-        setData(storedData.workers)
+      } else if (workersData.length > 0) {
+        setData(workersData)
         setEntityType('worker')
-      } else if (storedData.tasks.length > 0) {
-        setData(storedData.tasks)
+      } else if (tasksData.length > 0) {
+        setData(tasksData)
         setEntityType('task')
       }
 
-      toast.success('Data restored from previous session', {
-        description: `Loaded ${storedData.clients.length + storedData.workers.length + storedData.tasks.length} records`,
-        duration: 4000,
-      })
+      const totalRecords = clientsData.length + workersData.length + tasksData.length
+      if (totalRecords > 0) {
+        toast.success('Data restored from previous session', {
+          description: `Loaded ${totalRecords} records`,
+          duration: 4000,
+        })
+      }
     }
   }, [])
 
@@ -149,11 +158,14 @@ export default function Home() {
   }, [clients, workers, tasks, priorityConfig, uploadedFiles, rules])
 
   const updateValidationState = (uploadEntityType: 'client' | 'worker' | 'task', dataToValidate: any[]) => {
-    const results = runValidations(uploadEntityType, dataToValidate)
+    // Ensure dataToValidate is an array
+    const safeData = Array.isArray(dataToValidate) ? dataToValidate : []
+
+    const results = runValidations(uploadEntityType, safeData)
     setValidationResults(results)
 
     const errorMap: Record<string, string>[] = []
-    dataToValidate.forEach((_, index) => {
+    safeData.forEach((_, index) => {
       const rowErrors: Record<string, string> = {}
       results
         .filter(result => result.rowIndex === index)
@@ -179,36 +191,38 @@ export default function Home() {
   }
 
   const handleDataUpload = (parsed: any[], uploadEntityType: 'client' | 'worker' | 'task', filename?: string) => {
-    setData(parsed)
+    // Ensure parsed is an array
+    const safeParsed = Array.isArray(parsed) ? parsed : []
+    setData(safeParsed)
     setEntityType(uploadEntityType)
 
     const fileInfo = {
       name: filename || `${uploadEntityType}_data.csv`,
       uploadDate: new Date().toISOString(),
-      rowCount: parsed.length
+      rowCount: safeParsed.length
     }
 
     // Store data in entity-specific state
     switch (uploadEntityType) {
       case 'client':
-        setClients(parsed)
-        setOriginalClients(parsed)
+        setClients(safeParsed)
+        setOriginalClients(safeParsed)
         setUploadedFiles(prev => ({
           ...prev,
           clients: fileInfo
         }))
         break
       case 'worker':
-        setWorkers(parsed)
-        setOriginalWorkers(parsed)
+        setWorkers(safeParsed)
+        setOriginalWorkers(safeParsed)
         setUploadedFiles(prev => ({
           ...prev,
           workers: fileInfo
         }))
         break
       case 'task':
-        setTasks(parsed)
-        setOriginalTasks(parsed)
+        setTasks(safeParsed)
+        setOriginalTasks(safeParsed)
         setUploadedFiles(prev => ({
           ...prev,
           tasks: fileInfo
@@ -216,26 +230,28 @@ export default function Home() {
         break
     }
 
-    updateValidationState(uploadEntityType, parsed)
+    updateValidationState(uploadEntityType, safeParsed)
   }
 
   const handleFilteredData = (filteredData: any[]) => {
-    setData(filteredData)
+    // Ensure filteredData is an array
+    const safeFilteredData = Array.isArray(filteredData) ? filteredData : []
+    setData(safeFilteredData)
 
     // Update the appropriate entity-specific state
     switch (entityType) {
       case 'client':
-        setClients(filteredData)
+        setClients(safeFilteredData)
         break
       case 'worker':
-        setWorkers(filteredData)
+        setWorkers(safeFilteredData)
         break
       case 'task':
-        setTasks(filteredData)
+        setTasks(safeFilteredData)
         break
     }
 
-    updateValidationState(entityType, filteredData)
+    updateValidationState(entityType, safeFilteredData)
   }
 
   const resetFilters = () => {
@@ -257,6 +273,12 @@ export default function Home() {
   }
 
   const handleDataChange = (rowIndex: number, columnId: string, value: string) => {
+    // Ensure data is an array and rowIndex is valid
+    if (!Array.isArray(data) || rowIndex < 0 || rowIndex >= data.length) {
+      console.warn('Invalid data or rowIndex in handleDataChange')
+      return
+    }
+
     const updatedData = [...data]
     updatedData[rowIndex] = { ...updatedData[rowIndex], [columnId]: value }
     setData(updatedData)
@@ -264,19 +286,25 @@ export default function Home() {
     // Update entity-specific data
     switch (entityType) {
       case 'client':
-        const updatedClients = [...clients]
-        updatedClients[rowIndex] = { ...updatedClients[rowIndex], [columnId]: value }
-        setClients(updatedClients)
+        if (Array.isArray(clients) && rowIndex < clients.length) {
+          const updatedClients = [...clients]
+          updatedClients[rowIndex] = { ...updatedClients[rowIndex], [columnId]: value }
+          setClients(updatedClients)
+        }
         break
       case 'worker':
-        const updatedWorkers = [...workers]
-        updatedWorkers[rowIndex] = { ...updatedWorkers[rowIndex], [columnId]: value }
-        setWorkers(updatedWorkers)
+        if (Array.isArray(workers) && rowIndex < workers.length) {
+          const updatedWorkers = [...workers]
+          updatedWorkers[rowIndex] = { ...updatedWorkers[rowIndex], [columnId]: value }
+          setWorkers(updatedWorkers)
+        }
         break
       case 'task':
-        const updatedTasks = [...tasks]
-        updatedTasks[rowIndex] = { ...updatedTasks[rowIndex], [columnId]: value }
-        setTasks(updatedTasks)
+        if (Array.isArray(tasks) && rowIndex < tasks.length) {
+          const updatedTasks = [...tasks]
+          updatedTasks[rowIndex] = { ...updatedTasks[rowIndex], [columnId]: value }
+          setTasks(updatedTasks)
+        }
         break
     }
 
@@ -319,11 +347,11 @@ export default function Home() {
   const handleExport = useCallback(async () => {
     try {
       await exportDataPackage({
-        clients,
-        workers,
-        tasks,
+        clients: Array.isArray(clients) ? clients : [],
+        workers: Array.isArray(workers) ? workers : [],
+        tasks: Array.isArray(tasks) ? tasks : [],
         priorityConfig,
-        rules
+        rules: Array.isArray(rules) ? rules : []
       })
       toast.success('ZIP package exported successfully!')
     } catch {
@@ -335,7 +363,7 @@ export default function Home() {
 
   const handleExportClients = useCallback(() => {
     try {
-      if (clients.length === 0) {
+      if (!Array.isArray(clients) || clients.length === 0) {
         toast.error('No client data to export')
         return
       }
@@ -348,7 +376,7 @@ export default function Home() {
 
   const handleExportWorkers = useCallback(() => {
     try {
-      if (workers.length === 0) {
+      if (!Array.isArray(workers) || workers.length === 0) {
         toast.error('No worker data to export')
         return
       }
@@ -361,7 +389,7 @@ export default function Home() {
 
   const handleExportTasks = useCallback(() => {
     try {
-      if (tasks.length === 0) {
+      if (!Array.isArray(tasks) || tasks.length === 0) {
         toast.error('No task data to export')
         return
       }
@@ -374,7 +402,7 @@ export default function Home() {
 
   const handleExportRules = useCallback(() => {
     try {
-      if (rules.length === 0) {
+      if (!Array.isArray(rules) || rules.length === 0) {
         toast.error('No rules to export')
         return
       }
@@ -388,11 +416,11 @@ export default function Home() {
   const handleExportExcel = useCallback(() => {
     try {
       exportExcelFile({
-        clients,
-        workers,
-        tasks,
+        clients: Array.isArray(clients) ? clients : [],
+        workers: Array.isArray(workers) ? workers : [],
+        tasks: Array.isArray(tasks) ? tasks : [],
         priorityConfig,
-        rules
+        rules: Array.isArray(rules) ? rules : []
       })
       toast.success('Excel file exported successfully!')
     } catch (error) {
@@ -402,8 +430,9 @@ export default function Home() {
 
   const handleTabChange = (entityType: 'client' | 'worker' | 'task') => {
     setEntityType(entityType)
-    const dataToShow = entityType === 'client' ? clients :
-      entityType === 'worker' ? workers : tasks
+    const dataToShow = entityType === 'client' ? (Array.isArray(clients) ? clients : []) :
+      entityType === 'worker' ? (Array.isArray(workers) ? workers : []) :
+        (Array.isArray(tasks) ? tasks : [])
     setData(dataToShow)
     updateValidationState(entityType, dataToShow)
   }
@@ -441,10 +470,10 @@ export default function Home() {
 
     // Switch to another available tab if current one is deleted
     const remainingData = [
-      { type: 'client' as const, data: entityType === 'client' ? [] : clients },
-      { type: 'worker' as const, data: entityType === 'worker' ? [] : workers },
-      { type: 'task' as const, data: entityType === 'task' ? [] : tasks }
-    ].find(item => item.data.length > 0)
+      { type: 'client' as const, data: entityType === 'client' ? [] : (Array.isArray(clients) ? clients : []) },
+      { type: 'worker' as const, data: entityType === 'worker' ? [] : (Array.isArray(workers) ? workers : []) },
+      { type: 'task' as const, data: entityType === 'task' ? [] : (Array.isArray(tasks) ? tasks : []) }
+    ].find(item => Array.isArray(item.data) && item.data.length > 0)
 
     if (remainingData) {
       setEntityType(remainingData.type)
@@ -457,7 +486,9 @@ export default function Home() {
     }
   }
 
-  const hasData = clients.length > 0 || workers.length > 0 || tasks.length > 0
+  const hasData = (Array.isArray(clients) ? clients.length : 0) > 0 ||
+    (Array.isArray(workers) ? workers.length : 0) > 0 ||
+    (Array.isArray(tasks) ? tasks.length : 0) > 0
 
   return (
     <div className="min-h-screen bg-white">
@@ -486,17 +517,21 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <div className="text-right mr-4">
                 <div className="text-sm font-medium text-black">
-                  {clients.length + workers.length + tasks.length} Records
+                  {(Array.isArray(clients) ? clients.length : 0) +
+                    (Array.isArray(workers) ? workers.length : 0) +
+                    (Array.isArray(tasks) ? tasks.length : 0)} Records
                 </div>
                 <div className="text-xs text-gray-600">
-                  {validationResults.length} Issues
+                  {Array.isArray(validationResults) ? validationResults.length : 0} Issues
                 </div>
               </div>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     className="bg-gray-900 text-white hover:bg-gray-800 transition-colors"
-                    disabled={clients.length + workers.length + tasks.length === 0}
+                    disabled={(Array.isArray(clients) ? clients.length : 0) +
+                      (Array.isArray(workers) ? workers.length : 0) +
+                      (Array.isArray(tasks) ? tasks.length : 0) === 0}
                   >
                     Export Data
                     <ChevronDown className="ml-2 h-4 w-4" />
@@ -508,49 +543,49 @@ export default function Home() {
 
                     <Button
                       onClick={handleExportClients}
-                      disabled={clients.length === 0}
+                      disabled={(Array.isArray(clients) ? clients.length : 0) === 0}
                       variant="ghost"
                       className="w-full justify-start text-left h-auto px-3 py-2"
                     >
                       <div>
                         <div className="font-medium">Clients CSV</div>
-                        <div className="text-xs text-gray-500">{clients.length} records</div>
+                        <div className="text-xs text-gray-500">{Array.isArray(clients) ? clients.length : 0} records</div>
                       </div>
                     </Button>
 
                     <Button
                       onClick={handleExportWorkers}
-                      disabled={workers.length === 0}
+                      disabled={(Array.isArray(workers) ? workers.length : 0) === 0}
                       variant="ghost"
                       className="w-full justify-start text-left h-auto px-3 py-2"
                     >
                       <div>
                         <div className="font-medium">Workers CSV</div>
-                        <div className="text-xs text-gray-500">{workers.length} records</div>
+                        <div className="text-xs text-gray-500">{Array.isArray(workers) ? workers.length : 0} records</div>
                       </div>
                     </Button>
 
                     <Button
                       onClick={handleExportTasks}
-                      disabled={tasks.length === 0}
+                      disabled={(Array.isArray(tasks) ? tasks.length : 0) === 0}
                       variant="ghost"
                       className="w-full justify-start text-left h-auto px-3 py-2"
                     >
                       <div>
                         <div className="font-medium">Tasks CSV</div>
-                        <div className="text-xs text-gray-500">{tasks.length} records</div>
+                        <div className="text-xs text-gray-500">{Array.isArray(tasks) ? tasks.length : 0} records</div>
                       </div>
                     </Button>
 
                     <Button
                       onClick={handleExportRules}
-                      disabled={rules.length === 0}
+                      disabled={(Array.isArray(rules) ? rules.length : 0) === 0}
                       variant="ghost"
                       className="w-full justify-start text-left h-auto px-3 py-2"
                     >
                       <div>
                         <div className="font-medium">Rules JSON</div>
-                        <div className="text-xs text-gray-500">{rules.length} rules</div>
+                        <div className="text-xs text-gray-500">{Array.isArray(rules) ? rules.length : 0} rules</div>
                       </div>
                     </Button>
 
@@ -559,7 +594,9 @@ export default function Home() {
 
                     <Button
                       onClick={handleExportExcel}
-                      disabled={clients.length + workers.length + tasks.length === 0}
+                      disabled={(Array.isArray(clients) ? clients.length : 0) +
+                        (Array.isArray(workers) ? workers.length : 0) +
+                        (Array.isArray(tasks) ? tasks.length : 0) === 0}
                       variant="ghost"
                       className="w-full justify-start text-left h-auto px-3 py-2"
                     >
@@ -571,7 +608,9 @@ export default function Home() {
 
                     <Button
                       onClick={handleExport}
-                      disabled={clients.length + workers.length + tasks.length === 0}
+                      disabled={(Array.isArray(clients) ? clients.length : 0) +
+                        (Array.isArray(workers) ? workers.length : 0) +
+                        (Array.isArray(tasks) ? tasks.length : 0) === 0}
                       variant="ghost"
                       className="w-full justify-start text-left h-auto px-3 py-2"
                     >
@@ -603,7 +642,7 @@ export default function Home() {
             </motion.div>
 
             {/* Data Table with Filter */}
-            {data.length > 0 && (
+            {Array.isArray(data) && data.length > 0 && (
               <>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -642,7 +681,7 @@ export default function Home() {
           {/* Right Column - Configuration */}
           <div className="space-y-8">
             {/* Data Health Panel */}
-            {data.length > 0 && (
+            {Array.isArray(data) && data.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}

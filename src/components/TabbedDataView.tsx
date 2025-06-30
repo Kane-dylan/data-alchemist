@@ -11,10 +11,10 @@ import DataTable from './DataTable'
 import { toast } from 'sonner'
 
 interface TabbedDataViewProps {
-  clients: any[]
-  workers: any[]
-  tasks: any[]
-  errors: Record<string, string>[]
+  clients?: any[]
+  workers?: any[]
+  tasks?: any[]
+  errors?: Record<string, string>[]
   currentEntityType: 'client' | 'worker' | 'task'
   uploadedFiles?: {
     clients?: { name: string; uploadDate: string }
@@ -27,10 +27,10 @@ interface TabbedDataViewProps {
 }
 
 export default function TabbedDataView({
-  clients,
-  workers,
-  tasks,
-  errors,
+  clients = [],
+  workers = [],
+  tasks = [],
+  errors = [],
   currentEntityType,
   uploadedFiles,
   onTabChange,

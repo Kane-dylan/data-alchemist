@@ -1,8 +1,8 @@
 // Storage utility for persisting data across sessions
 export interface StoredData {
-  clients: any[]
-  workers: any[]
-  tasks: any[]
+  clients?: any[]
+  workers?: any[]
+  tasks?: any[]
   lastUpload: string
   priorityConfig?: any
   uploadedFiles?: {
@@ -49,9 +49,9 @@ export const DataStorage = {
   hasData: (): boolean => {
     const data = DataStorage.load()
     return data !== null && (
-      data.clients.length > 0 || 
-      data.workers.length > 0 || 
-      data.tasks.length > 0
+      (data.clients?.length || 0) > 0 || 
+      (data.workers?.length || 0) > 0 || 
+      (data.tasks?.length || 0) > 0
     )
   }
 }
